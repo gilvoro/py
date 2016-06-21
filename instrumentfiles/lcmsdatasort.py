@@ -1,4 +1,3 @@
-import os
 import csv
 
 #a function which takes data from Water's Target Lynx and converts

@@ -6,16 +6,19 @@ import matplotlib.pyplot as plt
 def graph(residualdict, consdict, pointsdict, analyte, filename):
     eqlist = sorted(residualdict.keys())
 #setup the figure ( #rows, #cols, size in inchs)        
-    fig, axes = plt.subplots(nrows=4,ncols=2, figsize =(10,8))    
-    row = 0
+    fig, axes = plt.subplots(nrows=3,ncols=4, figsize =(15,8))    
+    col = 0
 #for each curve do stuff
     for equation in eqlist:
-        col = 0
-        title = analyte + ' ' + equation
+        row = 0
+        
+        title = analyte + ' ' + equation + '\n'
         xdata = np.asarray(residualdict[equation]['xdata'])
         ydata = np.asarray(residualdict[equation]['ydata'])
         xmean = np.asarray(residualdict[equation]['xmean'])
         ymean = np.asarray(residualdict[equation]['ymean'])
+        ynorm = np.asarray(residualdict[equation]['ynorm'])
+        ymeannorm = np.asarray(residualdict[equation]['ymeannorm'])
 #get the unique x-values to use as ticks
         xticks = xdata.astype(int)
             
@@ -31,17 +34,17 @@ def graph(residualdict, consdict, pointsdict, analyte, filename):
         else:
             xmin = xmin*0.75
 
-#find the max and min of y values
+#find the max and min of y values for precent residuals
         ymaxtest = abs(np.amax(ydata))
         ymintest = abs(np.amin(ydata))
 
-#choose the one with the largest magnitude
+#choose the one with the largest magnitude for precent residuals
         if ymaxtest > ymintest:
             testcase = ymaxtest
         else:
             testcase = ymintest
 
-#set the y-bondaries and ticks based on above (min, max(not included), interval)
+#set the y-bondaries and ticks based on above (min, max(not included), interval) for precent residuals
         if 0 <= testcase <= 10:
             ymin = -12
             ymax = 12
@@ -67,17 +70,47 @@ def graph(residualdict, consdict, pointsdict, analyte, filename):
             ymax = 1200
             yticks = range(-1000, 1100, 200)
 
+#the normalized residuals will use simple -5 to 5 range
+        ynormticks = range(-5,6,1)        
+#plot the normalized residuals
+#plot the raw data as blue circles
+        axes[row,col].plot(xdata,ynorm, 'o')
+#plot the averaged data as red squares
+        axes[row,col].plot(xmean,ymeannorm, 'rs')
+        axes[row,col].set_title((title + ' normalized residuals'),fontsize=8)
+#set the boundaries of the graph
+        axes[row,col].axis([xmin,xmax,-6,6])
+#change the axis to only display on the left and bottom
+        axes[row,col].yaxis.set_ticks_position('left')
+        axes[row,col].xaxis.set_ticks_position('bottom')
+#add a line at zero
+        axes[row,col].axhline(0,0,1, color='r', linestyle = '--', lw=1)
+#set a line at the max and min of the ydata
+        axes[row,col].axhline(np.amax(ynorm),0,1, color='m', linestyle = ':', lw=1)
+        axes[row,col].axhline(np.amin(ynorm),0,1, color='m', linestyle = ':', lw=1)
+#set the scale of x to log
+        axes[row,col].set_xscale('log')
+        axes[row,col].set_xticks(xticks)
+        axes[row,col].set_yticks(ynormticks)
+        axes[row,col].set_xticklabels(xticks, fontsize = 'xx-small')
+        axes[row,col].set_yticklabels(ynormticks, fontsize = 'x-small')
+        row += 1
+        
+        
+#plot the precent residuals
 #plot the raw data as blue circles
         axes[row,col].plot(xdata,ydata, 'o')
 #plot the averaged data as red squares
         axes[row,col].plot(xmean,ymean, 'rs')
         axes[row,col].set_title((title + ' percent residuals'),fontsize=8)
+#set the boundaries of the graph
         axes[row,col].axis([xmin,xmax,ymin,ymax])
 #change the axis to only display on the left and bottom
         axes[row,col].yaxis.set_ticks_position('left')
         axes[row,col].xaxis.set_ticks_position('bottom')
 #add a line at zero
         axes[row,col].axhline(0,0,1, color='r', linestyle = '--', lw=1)
+#set a line at the max and min of the ydata
         axes[row,col].axhline(np.amax(ydata),0,1, color='m', linestyle = ':', lw=1)
         axes[row,col].axhline(np.amin(ydata),0,1, color='m', linestyle = ':', lw=1)
 #set the scale of x to log
@@ -86,7 +119,8 @@ def graph(residualdict, consdict, pointsdict, analyte, filename):
         axes[row,col].set_yticks(yticks)
         axes[row,col].set_xticklabels(xticks, fontsize = 'xx-small')
         axes[row,col].set_yticklabels(yticks, fontsize = 'x-small')
-        col += 1
+        row += 1
+        
         
         numcons = len(consdict[equation])
         a = consdict[equation][0]
@@ -125,8 +159,8 @@ def graph(residualdict, consdict, pointsdict, analyte, filename):
         axes[row,col].set_yticks(ypticks)
         axes[row,col].set_yticklabels(ypticks, fontsize = 'x-small')
         axes[row,col].set_xticklabels(xpticks, fontsize = 'xx-small')    
-        row +=1
-
+        col +=1
+        
         
     fig.tight_layout() 
     plt.savefig(filename, dpi=200)

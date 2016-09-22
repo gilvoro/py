@@ -1,5 +1,5 @@
 #initial setup
-#updated 2016-01-20
+#updated 2016-09-22
 #--------------------------------------------------------------------------------------------------------------
 
 import os
@@ -10,13 +10,14 @@ import sys
 import calendar
 import Tkinter, tkFileDialog
 import subprocess
+import getpass
 
 
 cyear = int(datetime.date.today().strftime('%Y'))
 currentdate = datetime.date.today().isoformat()
 solventblanknumber = 1
-#sequencelistdir = 'C://sequence list'
-sequencelistdir = 'E://Users//James//Desktop'
+sequencelistdir = 'C://scriptfiles//sequence list'
+desktop = os.path.expanduser(~\Desktop)
 
 #list of letters to add to sample names if there are repeats
 alphabet = ('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p',
@@ -39,7 +40,7 @@ def getyear(text):
     year = raw_input(text)
     if len(year) == 2:
         year = '20' + year
-    if year == 'quit' or year == 'q' or year == 'exit':
+    if year.lower() == 'quit' or year.lower() == 'q' or year.lower() == 'exit':
         sys.exit()        
     elif year.isdigit():
         if int(year) < cyear or int(year) > cyear + 1 or len(year) != 4:
@@ -56,7 +57,7 @@ def getmonth(text):
     month = raw_input(text)
     if len(month) == 1:
         month = '0' + month
-    if month == 'quit'or month == 'q' or month == 'exit':
+    if month.lower() == 'quit'or month.lower() == 'q' or month.lower() == 'exit':
         sys.exit()        
     elif month.isdigit():
         if int(month) < 1 or int(month) > 12 or len(month) != 2:
@@ -68,12 +69,12 @@ def getmonth(text):
 
     return month
 
-#check user entered month and return it
+#check user entered day and return it
 def getday(text):
     day = raw_input(text)
     if len(day) == 1:
         day = '0' + day
-    if day == 'quit' or day == 'q' or day == 'exit':
+    if day.lower() == 'quit' or day.lower() == 'q' or day.lower() == 'exit':
         sys.exit()        
     elif day.isdigit():
         if int(day) < 1 or int(day) > calendar.monthrange(int(year),int(month))[1] or len(day) != 2:
@@ -91,8 +92,6 @@ def getinitialwellnumlcms(text):
     wellnum = raw_input(text)
     if wellnum.lower() == 'quit' or wellnum.lower() == 'q' or wellnum.lower() == 'exit':
         sys.exit()
-    #if wellnum != 5:
-    #    wellnum = getinitialwellnumlcms(wellnum+' is not a vaild well number.\nPlease enter the first well used: ')
 
     if iswellnum.match(wellnum.upper()):
         return wellnum.upper()
@@ -120,7 +119,7 @@ def getwellnum(position):
     
     return wellnum 
 
-#takes well number and gets numeric well position for lcms
+#takes well number and gets numeric well position
 def getpostion(wellnum):
     position = 0
     if wellnum[0] == '2':
@@ -132,11 +131,11 @@ def getpostion(wellnum):
 
     return position
 
-#gets the correct line for the output file, sample+date, sample, well number 
+#gets a sample line for the output file, sample+date, sample, well number, sampletype
 def sampleline(samplename, date, position, sampletype):
     datedsamplename = samplename + ' ' + date
     
-    return [datedsamplename, samplename, position, sampletype] + analytecolumns + methodcolumns
+    return [datedsamplename, samplename, position, sampletype] + sequencefiller
 
 #gives increasing number of solvent blank as the list is generated
 def solventline():
@@ -145,7 +144,7 @@ def solventline():
     datedsolventblank = solventblank + ' ' + rdate
     solventblanknumber += 1
     
-    return [datedsolventblank, solventblank, initialwellnum, 'Solvent'] + analytecolumns + methodcolumns 
+    return [datedsolventblank, solventblank, initialwellnum, 'Solvent']  + sequencefiller
 
 #adds cc blanks to the sequence
 def ccline(position):
@@ -153,15 +152,15 @@ def ccline(position):
     if position == 'start':
         x = 0
         while x < 5:
-            returnlist.append(['Starting Blank inj-' + alphabet[x] + ' ' + rdate, 'Starting Blank',
-                               initialwellnum, 'Solvent']+ analytecolumns + ['CC MS File'] + methodcolumns[1:])
+            returnlist.append(['Starting Blank ' + rdate + ' inj-' + alphabet[x], 'Starting Blank',
+                               initialwellnum, 'Solvent']+ sequencefiller)
             x +=1
 
     if position == 'end':
         x = 0
         while x < 5:
-            returnlist.append(['Ending Blank inj-' + alphabet[x] + ' ' + rdate, 'Ending Blank',
-                               initialwellnum, 'Solvent']+ analytecolumns + ['CC MS File'] + methodcolumns[1:])
+            returnlist.append(['Ending Blank ' + rdate + ' inj-' + alphabet[x], 'Ending Blank',
+                               initialwellnum, 'Solvent']+ sequencefiller)
             x +=1
 
     return returnlist
@@ -172,7 +171,8 @@ def addstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
     templist = standarddict[placelist]
     
     x = 0    
-        
+
+#if the sequence list format lists after, the program will add a blank after each injection
     if blanks.lower() == 'after':
         if repeats.lower() != 'none' and int(repeats) > 1:
             while x < int(repeats):
@@ -183,6 +183,7 @@ def addstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
             templist.append(sampleline(samplename,rdate,curpos,sampletype))
             templist.append(['solvent'])
 
+#if the sequence list format lists bracket, the program will add a blank before and after each injection
     elif blanks.lower() == 'bracket':
         templist.append(['solvent'])
         if repeats.lower() != 'none' and int(repeats) > 1:
@@ -194,6 +195,7 @@ def addstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
             templist.append(sampleline(samplename,rdate,curpos,sampletype))
             templist.append(['solvent'])
 
+#if the sequence list format lists set, the program will add a blank after all the injection
     elif blanks.lower() == 'set':
         if repeats.lower() != 'none' and int(repeats) > 1:
             while x < int(repeats):
@@ -212,7 +214,8 @@ def addstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
                     x += 1
             else:
                 templist.append(sampleline(samplename,rdate,curpos,sampletype))
-            
+
+#if the squence list format lists none, the program will add no blanks            
     else:
         if repeats.lower() != 'none' and int(repeats) > 1:
             x = 0
@@ -226,6 +229,8 @@ def addstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
 #takes MOR items from the standard list formats them to go into the dictionary            
 def MORaddstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
     templist = standarddict[placelist]
+
+#if the sequence list format lists after, the program will add a blank after each injection
     if blanks.lower() == 'after':
         if repeats.lower() != 'none' and int(repeats) > 1:
             while x < int(repeats):
@@ -237,6 +242,7 @@ def MORaddstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
             templist.append(['solvent'])
             templist.append(['end'])
 
+#if the sequence list format lists bracket, the program will add a blank before and after each injection
     elif blanks.lower() == 'bracket':
         templist.append(['solvent'])
         if repeats.lower() != 'none' and int(repeats) > 1:
@@ -250,6 +256,7 @@ def MORaddstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
             templist.append(['solvent'])
             templist.append(['end'])
 
+#if the sequence list format lists set, the program will add a blank after all the injection
     elif blanks.lower() == 'set':
         if repeats.lower() != 'none' and int(repeats) > 1:
             while x < int(repeats):
@@ -262,6 +269,7 @@ def MORaddstandard(placelist, samplename, repeats, blanks,curpos,sampletype):
             templist.append(['solvent'])
             templist.append(['end'])
 
+#if the squence list format lists none, the program will add no blanks         
     else:
         if repeats.lower() != 'none' and int(repeats) > 1:
             while x < int(repeats):
@@ -420,8 +428,7 @@ def MORaddstandardgcms(placelist, samplename, repeats, blanks,curpos,sampletype,
 #--------------------------------------------------------------------------------------------------------------
 #get the current available assay formats
 assaylist = []
-#assayfolder = 'Z://labtools//jimscripts//sequence list formats//'
-assayfolder = 'E://Users//James//Desktop//Python//tester'
+assayfolder = 'Z://labtools//jimscripts//sequence list formats//'
 x = 1
 for f in sorted(os.listdir(assayfolder)):
     if f.endswith('.csv'):
@@ -452,7 +459,7 @@ root.withdraw()
 print 'Please select csv file'
 fileloc = tkFileDialog.askopenfilename(defaultextension = '.csv',
                                        filetypes = [('CSV File','.csv')],
-                                       initialdir = os.path.join(sequencelistdir, 'csv files'),
+                                       initialdir = desktop,
                                        title ='Please select csv file')
 
 if fileloc == '':
@@ -493,6 +500,7 @@ else:
 #--------------------------------------------------------------------------------------------------------------
 #open the standard's file
 standardlist = []
+print assaytype
 with open (assaytype, 'rU') as csvfile:
     raw_data = csv.reader(csvfile)
     for row in raw_data:
@@ -501,9 +509,6 @@ with open (assaytype, 'rU') as csvfile:
 
 standarddict = {'BORlist':[], 'MORlist':[], 'EORlist':[],
                 'BORlistUr':[], 'MORlistUr':[], 'EORlistUr':[]}
-
-fullassayname = standardlist[0][1]
-matrix = standardlist[1][1]
 #setup a dictionary so that the same standard can be used in a variety of places in the run without a new position
 uniquedict = {}
 
@@ -530,7 +535,7 @@ if assayinstrument == 'gcms':
 #enter the row into the dictionary of unique standards
 
 #Decided if this is a urine or other control and add the apporiate values            
-            if matrix.lower() == 'urine' or matrix.lower() == 'ur' or matrix.lower() == 'u':
+            if row[7].lower() == 'urine' or row[7].lower() == 'ur' or row[7].lower() == 'u':
                 standardname = row[0] + row[10] + ' Ur'
                 matrixdict = 'Ur'
             else:
@@ -546,21 +551,17 @@ if assayinstrument == 'gcms':
 
     
 if assayinstrument == 'lcms':
-    curpos = getpostion(initialwellnum) + 1    
-#get list of of the columns for analytes plus the Quant reference
-    analytecolumns = []
-    x = 0
-    while x < int(standardlist[8][1]):
-        analytecolumns.append('')
-        x += 1
-    analytecolumns.append('')
-
-#get the method files and injection volume
-    methodcolumns = ['',standardlist[5][1],standardlist[6][1],standardlist[7][1]]
-
-
-    for row in standardlist:                
-        if standardlist.index(row) < 11:
+    curpos = getpostion(initialwellnum) + 1
+    urinefirst = False
+    sequencefiller = standardlist[3][1:]
+    
+    for row in standardlist:
+#setup to do blood and urine in the same sequence not used
+        #if standardlist.index(row) == 6:
+            #if row[7].lower() == 'urine' or row[7].lower() == 'ur' or row[7].lower() == 'u':
+                #urinefirst = True
+                
+        if standardlist.index(row) < 6:
             pass
         else:
 #set well number and dictionary of unique standards if not already there
@@ -569,19 +570,20 @@ if assayinstrument == 'lcms':
                 uniquedict.setdefault(row[0],curwellnum)
                 curpos += 1
 #Decided if this is a urine or other control and add the apporiate values            
-            if matrix.lower() == 'urine' or matrix.lower() == 'ur' or matrix.lower() == 'u':
-                standardname = row[0] + row[8] + ' Ur'
+            if row[7].lower() == 'urine' or row[7].lower() == 'ur' or row[7].lower() == 'u':
+                standardname = row[0] + row[9] + ' Ur'
                 matrixdict = 'Ur'
             else:
-                standardname = row[0] + row[8]
+                standardname = row[0] + row[9]
                 matrixdict = ''
-                
+
+#add the standards to the apporiate                
             if row[1].lower() != 'none':
-                addstandard('BORlist'+matrixdict, standardname,row[1],row[2],uniquedict[row[0]],row[7])
+                addstandard('BORlist'+matrixdict, standardname,row[1],row[2],uniquedict[row[0]],row[8])
             if row[3].lower() != 'none':
-               MORaddstandard('MORlist'+matrixdict, 'MOR ' + standardname,row[3],row[4],uniquedict[row[0]],row[7])
+               MORaddstandard('MORlist'+matrixdict, 'MOR ' + standardname,row[3],row[4],uniquedict[row[0]],row[8])
             if row[5].lower() != 'none':
-                addstandard('EORlist'+matrixdict, 'EOR ' + standardname,row[5],row[6],uniquedict[row[0]],row[7])
+                addstandard('EORlist'+matrixdict, 'EOR ' + standardname,row[5],row[6],uniquedict[row[0]],row[8])
     
 MORcontrolsUr = 0
 MORcontrols = 0
@@ -651,12 +653,11 @@ def sequencelistbuilder(ctnums, MORcount, matrixcontrol):
     global curpos
 
     sequencelist.append(solventline())
-    if len(ctnums) < 11:
-        controlcountmax = 10
-    elif standardlist[4][1].lower() == 'even' or standardlist[4][1].lower() == 'evenly':
+    
+    if standardlist[2][1].lower() == 'even' or standardlist[2][1].lower() == 'evenly':
         controlcountmax = len(ctnums)/(MORcount + 1)
     else:
-        controlcountmax = int(standardlist[4][1])
+        controlcountmax = int(standardlist[2][1])
 
     for item in standarddict['BORlist'+ matrixcontrol]:
         if item[0] == 'solvent':
@@ -665,7 +666,7 @@ def sequencelistbuilder(ctnums, MORcount, matrixcontrol):
             sequencelist.append(item)
 
     try:
-        samplerepeats = int(standardlist[2][1])
+        samplerepeats = int(standardlist[1][3])
     except:
         samplerepeats = 1
         
@@ -693,7 +694,7 @@ def sequencelistbuilder(ctnums, MORcount, matrixcontrol):
                     MORlistpostion +=1
                     MORcontrolsrun +=1
 
-            if standardlist[3][1].lower() == 'after':
+            if standardlist[1][1].lower() == 'after':
                 if samplerepeats == 1:
                     sequencelist.append(sampleline(item, rdate, getwellnum(curpos),'Analyte'))
                     sequencelist.append(solventline())
@@ -717,7 +718,7 @@ def sequencelistbuilder(ctnums, MORcount, matrixcontrol):
                 curpos += 1
     
         else:
-            if standardlist[3][1].lower() == 'after':
+            if standardlist[1][1].lower() == 'after':
                 if samplerepeats == 1:
                     sequencelist.append(sampleline(item, rdate, getwellnum(curpos),'Analyte'))
                     sequencelist.append(solventline())

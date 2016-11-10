@@ -16,8 +16,8 @@ import getpass
 cyear = int(datetime.date.today().strftime('%Y'))
 currentdate = datetime.date.today().isoformat()
 solventblanknumber = 1
-sequencelistdir = 'C://scriptfiles//sequence list'
-desktop = os.path.expanduser(~\Desktop)
+sequencelistdir = 'C:\\scriptfiles\\sequence lists'
+desktop = os.path.expanduser('~\Desktop')
 
 #list of letters to add to sample names if there are repeats
 alphabet = ('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p',
@@ -428,7 +428,11 @@ def MORaddstandardgcms(placelist, samplename, repeats, blanks,curpos,sampletype,
 #--------------------------------------------------------------------------------------------------------------
 #get the current available assay formats
 assaylist = []
-assayfolder = 'Z://labtools//jimscripts//sequence list formats//'
+if os.path.exists('Z://labtools//jimscripts//sequence list formats//'):
+    assayfolder = 'Z://labtools//jimscripts//sequence list formats//'
+else:
+    assayfolder = 'R://labtools//jimscripts//sequence list formats//'
+    
 x = 1
 for f in sorted(os.listdir(assayfolder)):
     if f.endswith('.csv'):

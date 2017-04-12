@@ -6,7 +6,7 @@ import scipy
 functions= [(lambda x, a, b: a+b*x, 0,'linear unweighted'),
             (lambda x, a, b: a+b*x, 1,'linear weighted to 1/x'),
             (lambda x, a, b, c: a+b*x+c*x**2, 1,'quadradic weighted to 1/x'),
-            (lambda x, a, b, c: a+b*x+c*x**2, 2,'quadradic weighted to 1/x**2')]
+            #(lambda x, a, b, c: a+b*x+c*x**2, 2,'quadradic weighted to 1/x**2')]
             #(lambda x, a, b: a+b*np.sqrt(abs(x)), 1,'squareroot of x weighted to 1/x'),
             #(lambda x, a, b: a + b*np.log(x), 1,'natrual log of x weighted to 1/x')]
 

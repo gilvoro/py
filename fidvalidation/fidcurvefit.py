@@ -72,26 +72,20 @@ def customcurvefit(xdata, ydata,analytedict):
                     pass
                 elif run == 'mean':                    
                     yvalue = np.mean(analytedict[conc]['all'])
-                    backcalc = analytedict[conc]['mean'].setdefault(item[2],{})
+                    backcalc = analytedict[conc]['mean'].setdefault(item[2],[])
 
                     if item[2].split(' ')[0] == 'quadradic':
-                        backcalc['backcalc'] = (backquad(yvalue,a,b,c))
+                        backcalc.append(backquad(yvalue,a,b,c))
                     else:
-                        backcalc['backcalc'] = (backfuncdict[item[2].split(' ')[0]](yvalue,a,b))
+                        backcalc.append(backfuncdict[item[2].split(' ')[0]](yvalue,a,b))
                 else:
                     yvalue = analytedict[conc][run]['raw'][0]
-                    backcalc = analytedict[conc][run].setdefault(item[2],{})
+                    backcalc = analytedict[conc][run].setdefault(item[2],[])
 
                     if item[2].split(' ')[0] == 'quadradic':
-                        backcalc['backcalc'] = (backquad(yvalue,a,b,c))
+                        backcalc.append(backquad(yvalue,a,b,c))
                     else:
-                        backcalc['backcalc'] = (backfuncdict[item[2].split(' ')[0]](yvalue,a,b))
+                        backcalc.append(backfuncdict[item[2].split(' ')[0]](yvalue,a,b))
                     
 #return data based on concentration
     return consdict
-
-
-                
-    
-    
-    

@@ -12,12 +12,14 @@ from xmr_grapher import *
 
 #a script to proccess LCMS data to generate xmr charts
 #Define file locations
-inputloc = 'C:/scriptfiles/xmr inputs'
-outputloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr plots'
-parametersloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr parameters'
+#inputloc = 'C:/scriptfiles/xmr inputs'
+#outputloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr plots'
+#parametersloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr parameters'
 
-#dictionary with the datasort fuction in it
-datasortfuctions = {'lcms': 'lcmsdatasort'}
+#file locations for testing
+inputloc = '/home/james/Desktop/input'
+outputloc = '/home/james/Desktop/output'
+parametersloc = '/home/james/Desktop/parameters'
 
 #generate a list of supported assays
 assaylist = []
@@ -49,8 +51,8 @@ def assaycheck():
 
     return assaynum
 
-def qanumcheck():
-    whatqanum = raw_input('Please enter the QA-ticket number for the controls (qa-###)\nor type quit to exit: ')
+def qanumcheck(setname):
+    whatqanum = raw_input('Please enter the QA-ticket number for the ' + setname + ' \nin the following manner: qa-###, or type quit to exit: ')
     qatest = isqan.search(whatqanum)
     if whatqanum.lower() == 'quit' or whatqanum.lower() == 'q' or whatqanum.lower() == 'exit':
         sys.exit()
@@ -79,6 +81,7 @@ def getparameters(fileloc):
     #this will contain the list of controls to be examined and if they have validation or initial data asscociated with them (1=yes)
     returndict = {}
     rownum = 0
+    templist = []
     with open(fileloc, 'rU') as csvfile:
         raw_data = csv.reader(csvfile)
         for row in raw_data:
@@ -86,14 +89,22 @@ def getparameters(fileloc):
             if rownum < 2:
                 returnlist.append(row[1])
                 rownum += 1
+        #row 2 gives us the column titles for later reference
+            elif rownum == 2:
+                keynames = row
+                rownum += 1
         #currently rows past row 2 have items for the dict
             elif rownum >2:
-                returndict[row[0]] = [row[1]]
+                returndict[row[0]] = {}
+                for a in range(1,len(row)+1):
+                    returndict[row[0]][keynames[a]]=row[a]
+                templist.append(row[2])
                 rownum += 1
         #the items in row 2 are just to make the file human readable
             else:
                 rownum += 1
 
+    returnlist.append(sorted(set(templist)))
     return returnlist, returndict
 
 #fuction to check for the script file and if it does exist make it
@@ -250,16 +261,6 @@ parameterlist, parameterdict = (getparameters(parameterfile))
 #setup a list by FQC number of the fqcnumbers to be loaded
 fqclist = sorted(fqcdict.keys())
 
-#check to see if there is correct instrument folder and make one if there isn't
-#instfolder = os.path.join(outputloc, parameterlist[1])
-#if not os.path.exists(instfolder):
-    #os.makedirs(instfolder)
-
-#check to see if there is correct assay folder and make one if there isn't
-#assayfolder = os.path.join(instfolder, parameterlist[0])
-#if not os.path.exists(assayfolder):
-    #os.makedirs(assayfolder)
-
 #--------------------------------------------------------------------------------
 #check to see what type of instrument is being run and see what path we go down
 if parameterlist[1].lower() == 'lcms':
@@ -271,7 +272,7 @@ if parameterlist[1].lower() == 'lcms':
     #setup to get the data
     dataforfile = {}
     #get the qa-number for the controls
-    controlqanum = qanumcheck()
+    controlqanum = qanumcheck('controls')
     print ' '
     
     #check for a folder in output related to this qanum if there isn't one make it
@@ -351,17 +352,12 @@ if parameterlist[1].lower() == 'lcms':
 
     #by analyte make the graph and the the writeout file
     for analyte in sorted(dataforfile.keys()):
-        #check for the analyte file and if its not there make it
-        analytefolder = os.path.join(controlqafolder, analyte)
-        if not os.path.exists(analytefolder):
-            os.makedirs(analytefolder)
-
         #make a human write out file
         humanwo = [['Compiled on:',readdate],['','']]     
         #setup the file names, the units, tolerances for the graph and the graphdict
         name = analyte + ' ' + date
-        graphfile = os.path.join(analytefolder, name + '.png')
-        outputfile = os.path.join(analytefolder, name + '.csv')
+        graphfile = os.path.join(controlqafolder, name + '.png')
+        outputfile = os.path.join(controlqafolder, name + '.csv')
         humanwo.append([analyte,''])
         humanwo.append(['',''])
         units = 'ng/mL'
@@ -373,7 +369,7 @@ if parameterlist[1].lower() == 'lcms':
         for level in sorted(parameterdict.keys()):
             dataforgraph[level] = {}
             #check the initialdatadict to see if intial data, if don't or never did set it to 'none'
-            if int(parameterdict[level][0]) == 1:
+            if int(parameterdict[level]['initial data']) == 1:
                 try:
                     dataforgraph[level]['i_mean'] = float(initialdict[analyte.lower()][level]['mean'])
                 except:
@@ -447,26 +443,111 @@ if parameterlist[1].lower() == 'lcms':
         os.makedirs(olduploadscon)
 
     print ' '
-    
+
+    oldgraphfile = os.path.join(controlqafolder, 'old graphs')
+    if not os.path.exists(oldgraphfile):
+        os.makedirs(oldgraphfile)
+
+    oldcsvfile = os.path.join(controlqafolder, 'old csv')
+    if not os.path.exists(oldcsvfile):
+        os.makedirs(oldcsvfile)
+                          
+    for item in os.listdir(controlqafolder):
+        if item.endswith('.csv') and date not in item:
+            shutil.move(os.path.join(controlqafolder, item), os.path.join(oldcsvfile, item))
+            print item + ' moved'
+        if item.endswith('.png') and date not in item:
+            shutil.move(os.path.join(controlqafolder, item), os.path.join(oldgraphfile, item))
+            print item + ' moved'
+
+    print ' '        
     for fqc in fqclist:
         shutil.copy(fqcdict[fqc]['fileloc'],os.path.join(olduploadscon,fqc.split('\n')[0] + ' ' + date))
         print fqcdict[fqc]['fileloc'] + ' copied'
 
     print ' '
+#------------------------------------------------------------------------------------------------------------------------
+if parameterlist[1].lower() == 'fid':
+    from fidrundatasort import *
 
-    print 'Type all if you want to delete all input files,\ntype none to delete none of the input files,\ntype some to delete select files'
-    deletecheck = raw_input('Please enter all, none, or some:')
+    for item in parameterlist[2]:
+        
+        #setup to get the data
+        dataforfile = {}
 
-    if deletecheck.lower() == 'all':
-        for newfile in os.listdir(inputloc):
-            os.remove(os.path.join(inputloc,newfile))
-    elif deletecheck.lower() == 'some':
-        for newfile in os.listdir(inputloc):
-            delete = raw_input('Enter delete to delete ' + newfile + 'from the input folder: ')
-            if delete.lower() == 'delete':
+        
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+print 'Type all if you want to delete all input files,\ntype none to delete none of the input files,\ntype some to delete select files'
+deletecheck = raw_input('Please enter all, none, or some:')
+
+if deletecheck.lower() == 'all':
+    for newfile in os.listdir(inputloc):
+        os.remove(os.path.join(inputloc,newfile))
+elif deletecheck.lower() == 'some':
+    for newfile in os.listdir(inputloc):
+        delete = raw_input('Enter delete to delete ' + newfile + 'from the input folder: ')
+        if delete.lower() == 'delete':
                 os.remove(os.path.join(inputloc,newfile))
 
-    raw_input('hit enter to close the program')
+raw_input('hit enter to close the program')
     
                            
 

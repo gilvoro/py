@@ -322,7 +322,7 @@ record_output = [['Neat Solution Record',''],['Compiled',date,'at ' + datetime.d
 for analyte in analyte_list_2:
     record_output.append(['analyte',analyte])
     record_output.append(['']+recordheader)
-    for date in record_dict[analyte]:
+    for date in sorted(record_dict[analyte].keys()):
         templist = [date]
         for item in recordheader:
             templist.append(record_dict[analyte][date][item])

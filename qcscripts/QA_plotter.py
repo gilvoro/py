@@ -12,14 +12,14 @@ from xmr_grapher import *
 
 #a script to proccess LCMS data to generate xmr charts
 #Define file locations
-#inputloc = 'C:/scriptfiles/xmr inputs'
-#outputloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr plots'
-#parametersloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr parameters'
+inputloc = 'C:/scriptfiles/xmr inputs'
+outputloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr plots'
+parametersloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr parameters'
 
 #file locations for testing
-inputloc = '/home/james/Desktop/input'
-outputloc = '/home/james/Desktop/output'
-parametersloc = '/home/james/Desktop/parameters'
+#inputloc = '/home/james/Desktop/input'
+#outputloc = '/home/james/Desktop/output'
+#parametersloc = '/home/james/Desktop/parameters'
 
 #generate a list of supported assays
 assaylist = []
@@ -48,9 +48,13 @@ def assaycheck():
         assaynum = assaycheck()
     elif int(whichnum) - 1 in range(len(assaylist)):
         assaynum = int(whichnum)-1
+    elif int(whichnum) - 1 not in range(len(assaylist)):
+        print 'That is not a valid number'
+        assaynum = assaycheck
 
     return assaynum
 
+#function to check for a valid qa ticket number
 def qanumcheck(setname):
     whatqanum = raw_input('Please enter the QA-ticket number for the ' + setname + ' \nin the following manner: qa-###, or type quit to exit: ')
     qatest = isqan.search(whatqanum)
@@ -96,7 +100,7 @@ def getparameters(fileloc):
         #currently rows past row 2 have items for the dict
             elif rownum >2:
                 returndict[row[0]] = {}
-                for a in range(1,len(row)+1):
+                for a in range(1,len(row)):
                     returndict[row[0]][keynames[a]]=row[a]
                 templist.append(row[2])
                 rownum += 1
@@ -128,7 +132,7 @@ def lcmsinitialdata(forscriptfolder):
                 else:
                     initialdict.setdefault(row[0],{})
                     for a in range((len(row)-1)/3):
-                        initialdict[row[0]][row[(a*3)+1]] = {'mean':row[(a*3)+2],'sd':row[(a*3)+3]}
+                        initialdict[row[0].lower()][row[(a*3)+1]] = {'mean':row[(a*3)+2],'sd':row[(a*3)+3]}
 
     return initialdict
 
@@ -145,7 +149,7 @@ def previousdatafun(forscriptfolder,fqclisttemp):
         if scriptfile.startswith('script data'):
             #pull out the date/time stamp and see if its bigger then the last one
             if scriptfile.split('-')[1] > previousdatacheck:
-                #if it is then current file because the one we compare everythint to
+                #if it is then current file because the one we compare everything to it
                 previousdatacheck = scriptfile.split('-')[1]
                 previousdata = os.path.join(forscriptfolder, scriptfile)
 
@@ -291,7 +295,7 @@ if parameterlist[1].lower() == 'lcms':
     dataforfile,fqcrunlist = previousdatafun(forscriptfolder, fqclist) 
 
    #terms that will invalidate control usage
-    non_control_list = ['dilution', 'new', 'old']
+    non_control_list = ['dilution', 'new', 'old', 'utak']
     
     for fqc in fqcrunlist:
         #call datasort and get back the dict
@@ -332,14 +336,17 @@ if parameterlist[1].lower() == 'lcms':
                             dataforfile[analyte][level][fqc]= map(float,measurelist)
 
     #writeout the data for the script to use next time
-    outputscriptfilename = 'script data-' + date + '-.csv'
+    outputscriptfilename = 'script data-' + date + '.csv'
     outputscriptfile = os.path.join(forscriptfolder, outputscriptfilename)
     scriptwo = []
-    for analyte in dataforfile:
+    sortedanalytes = sorted(dataforfile.keys())
+    for analyte in sortedanalytes:
         scriptwo.append(['analyte',analyte])
-        for level in dataforfile[analyte]:
+        sortedlevels = sorted(dataforfile[analyte].keys())
+        for level in sortedlevels:
             scriptwo.append(['level',level])
-            for fqc in dataforfile[analyte][level]:
+            sortedfqc = sorted(dataforfile[analyte][level].keys())
+            for fqc in sortedfqc:
                 templist = [fqc]
                 for value in dataforfile[analyte][level][fqc]:
                     templist.append(value)
@@ -462,7 +469,7 @@ if parameterlist[1].lower() == 'lcms':
 
     print ' '        
     for fqc in fqclist:
-        shutil.copy(fqcdict[fqc]['fileloc'],os.path.join(olduploadscon,fqc.split('\n')[0] + ' ' + date))
+        shutil.copy(fqcdict[fqc]['fileloc'],os.path.join(olduploadscon,fqc.split('\n')[0] + ' ' + date + '.txt'))
         print fqcdict[fqc]['fileloc'] + ' copied'
 
     print ' '

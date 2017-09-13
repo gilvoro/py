@@ -27,6 +27,8 @@ def checklen(item):
     returnlist.append(fulllen-int(round(0.9*fulllen)))
     returnlist.append(fulllen-int(round(0.75*fulllen)))
     returnlist.append(fulllen-int(round(0.5*fulllen)))
+    if fulllen > 9:
+        returnlist.append(fulllen-10)
 
     return returnlist
 
@@ -67,7 +69,7 @@ def lcmsdatasort(filename):
 
     return sorted_data
 
-#simple function to check length of a number and round accordingling
+#simple function to check length of a number and round according
 def rounder(num):
     if 0 == num:
         return 0.00
@@ -115,6 +117,7 @@ if fileloc == '':
 sorted_data = lcmsdatasort(fileloc)
 
 metric_data = {}
+#sort the keys so we the lines in order
 analyte_list = sorted(sorted_data.keys())
 
 for analyte in analyte_list:
@@ -154,11 +157,12 @@ for analyte in analyte_list:
 
                 else:
                     pass
-
+#go look for old data
 assay_record = os.path.join(record_dir,instrument,assayname + ' neat injection record.csv')
 record_dict = {}
 current_analyte = ''
 haverecord = True
+#try to open if the file
 try:
     with open (assay_record, 'rU') as csvfile:
         record_data = csv.reader(csvfile, delimiter=',')
@@ -173,6 +177,7 @@ try:
             elif isdate.match(row[0]):
                 x = 0
                 record_dict[current_analyte].setdefault(row[0],{})
+#iterate over the row, add each cell by the corresponding column header
                 while x < len(row):
                     if x == 0:
                         x += 1
@@ -183,51 +188,70 @@ try:
 
             else:
                 pass     
-
+#if no record is found says so
 except:
     print 'No Record found for ' + assayname + ' neat injection'
     haverecord = False
 
                 
     
-
+#
 writeoutlist = [['Neat Solution Stats',''],['Compiled',date,'at ' + datetime.datetime.now().strftime('%H:%M:%S')],['','']]
 
+#get the keys in alphabetical order
 analyte_list_2 = sorted(metric_data.keys())
 
 for analyte in analyte_list_2:
     analyte_dict_2 = metric_data[analyte]
     writeoutlist = writeoutlist +[[analyte,''],['','RT','RT','RT',
-                                                '','Area','Area','Area','Area',
-                                                '','IS Area','IS Area','IS Area','IS Area',
-                                                '','Response','Response','Response','Response',
-                                                '','Ratio','Ratio','Ratio','Ratio',],
+                                                '','Area','Area','Area',
+                                                '','IS Area','IS Area','IS Area',
+                                                '','Response','Response','Response',
+                                                '','Ratio','Ratio','Ratio'],
                                               ['','Most Common','Range','# more -/+ 0.01',
-                                               '','Mean','St. Dev','%CV','Slope',
-                                               '','Mean','St. Dev','%CV','Slope',
-                                               '','Mean','St. Dev','%CV','Slope',
-                                               '','Mean','St. Dev','%CV','Slope']]
+                                               '','Mean','St. Dev','%CV',
+                                               '','Mean','St. Dev','%CV',
+                                               '','Mean','St. Dev','%CV',
+                                               '','Mean','St. Dev','%CV',]]
 
-    hundred_list = ['100% injections']
-    ninety_list = ['Last 90% injections']
-    quarter_list = ['Last 75% injections']
-    half_list = ['Last 50% injections']
-
-    op_list_dict = {0:hundred_list,1:ninety_list,2:quarter_list,3:half_list}
-        
+#setup the columns I want to pull data from        
     keylist = ['area','isarea','rr','ionratio']
 
     
     rt_data = analyte_dict_2['rt']
     numitem = checklen(rt_data)
 
-    for number in numitem:
-        temp_list = op_list_dict[numitem.index(number)]
-        calc_list = np.asarray(rt_data[number:])
+#setup the lists to hold the calculations
+    hundred_list = ['100% injections']
+    ninety_list = ['Last 90% injections']
+    quarter_list = ['Last 75% injections']
+    half_list = ['Last 50% injections']
+    lastten = ['Last 10 injections']
+
+#....and a dictionary to hold the lists
+    op_list_dict = {0:hundred_list,1:ninety_list,2:quarter_list,3:half_list,4:lastten}
+
+#rt are done differently so they are called seperately
+    rt_data = analyte_dict_2['rt']
+    numitem = checklen(rt_data)
+#if 10 injections or or more run add set lasttencheck to true
+    if len(numitem) == 5:
+        lasttencheck = True
+    else:
+        lasttencheck = False
+        
+    y = 0
+    while y < len(numitem):
+#call the correct list using the index
+        temp_list = op_list_dict[y]
+#slice the list to only included the correct portion 
+        calc_list = np.asarray(rt_data[numitem[y]:])
+#find the mode of the RT
         most_rt = float(stats.mode(calc_list,axis=None)[0])
         low_rt = np.amin(calc_list)
         high_rt = np.amax(calc_list)
         x = 0
+#determine the number of samples with a RT great the 0.01 away from the mode
         for value in calc_list:
             if round(most_rt-0.01,2) <= value <= round(most_rt+0.01,2):
                 pass
@@ -237,28 +261,36 @@ for analyte in analyte_list_2:
         temp_list.append(str(low_rt) + '-' + str(high_rt))
         temp_list.append(str(x))
         temp_list.append('')
+        y += 1
 
 
+#the other parameter are handle the same way as each other
     for key in keylist:
         data = analyte_dict_2[key]
         numitem = checklen(data)
 
-        for number in numitem:
-            temp_list = op_list_dict[numitem.index(number)]
-            calc_list = np.asarray(data[number:])
+        y = 0
+        while y < len(numitem):
+            temp_list = op_list_dict[y]
+            calc_list = np.asarray(data[numitem[y]:])
             mean = np.mean(calc_list)
             stdev = np.std(calc_list)
-            slope, intercept, r_value, p_value, std_err = stats.linregress(range(1,len(calc_list)+1),(calc_list/stdev))
+
             cv = (stdev/mean)*100
             temp_list.append(str(rounder(mean)))
             temp_list.append(str(rounder(stdev)))
             temp_list.append(str(rounder(cv))+'%')
-            temp_list.append(str(rounder(slope)))
             temp_list.append('')
-            
+            y += 1
 
-    for list in op_list_dict:
-        writeoutlist.append(op_list_dict[list])
+    if lasttencheck:
+        opkeys = [0,1,2,3,4]
+    else:
+        opkeys = [0,1,2,3]
+        
+
+    for listkey in opkeys:
+        writeoutlist.append(op_list_dict[listkey])
         
     if haverecord:
         commonrt = []
@@ -281,14 +313,10 @@ for analyte in analyte_list_2:
         
         numberofrecords = 'Mean of Last ' + str(len(lastfive)) + ' Assays'
         writeoutlist.append([numberofrecords,str(float(stats.mode(commonrt,axis=None)[0])),'',str(np.mean(outrt)),
-                            '',str(rounder(np.mean(analytearea))), str(rounder(np.std(analytearea))),
-                            str(rounder((np.std(analytearea)/np.mean(analytearea))*100))+'%','','',
-                            str(rounder(np.mean(isarea))), str(rounder(np.std(isarea))),
-                            str(rounder((np.std(isarea)/np.mean(isarea))*100))+'%','','',
-                            str(rounder(np.mean(response))), str(rounder(np.std(response))),
-                            str(rounder((np.std(response)/np.mean(response))*100))+'%','','',
-                            str(rounder(np.mean(ratio))), str(rounder(np.std(ratio))),
-                            str(rounder((np.std(ratio)/np.mean(ratio))*100))+'%'])
+                            '',str(rounder(np.mean(analytearea))),'','','',,
+                            str(rounder(np.mean(isarea))),'','','','',
+                            str(rounder(np.mean(response))),'','','',,
+                            str(rounder(np.mean(ratio)))])
                         
     if commit:
         analyte_record = record_dict.setdefault(analyte,{})

@@ -7,7 +7,7 @@ import csv
 import datetime
 import numpy as np
 from scipy import stats
-from xmr_grapher import *
+from bob import *
 
 
 #a script to proccess LCMS data to generate xmr charts
@@ -66,7 +66,7 @@ def qanumcheck(setname):
         qaname = 'qa-'+str("".join(isnum.group().split()))
     else:
         print'invalid QA number or incorrect format.'
-        qaname = qanumcheck()
+        qaname = qanumcheck(setname)
 
     return qaname
 
@@ -89,16 +89,16 @@ def getparameters(fileloc):
     with open(fileloc, 'rU') as csvfile:
         raw_data = csv.reader(csvfile)
         for row in raw_data:
-        #currently rows 0 and 1 contain things for the list
-            if rownum < 2:
+        #currently rows 0 thru 2 contain things for the list
+            if rownum < 3:
                 returnlist.append(row[1])
                 rownum += 1
-        #row 2 gives us the column titles for later reference
-            elif rownum == 2:
+        #row 3 gives us the column titles for later reference
+            elif rownum == 3:
                 keynames = row
                 rownum += 1
         #currently rows past row 2 have items for the dict
-            elif rownum >2:
+            elif rownum > 3:
                 returndict[row[0]] = {}
                 for a in range(1,len(row)):
                     returndict[row[0]][keynames[a]]=row[a]
@@ -325,8 +325,9 @@ if parameterlist[1].lower() == 'lcms':
                             dataforfile[analyte][level].setdefault('n_values',[])
                             dataforfile[analyte][level]['n_values'].append(float(analytedict[sampleline]['Std. Conc']))
                             measurelist.append(analytedict[sampleline]['ng/mL'])
-                        #if the assay is cannabinoids check for the control 5-8 and add them to the currect data group
-                        elif parameterlist[0] == 'cannabinoids' and level.startswith('control'):
+                        #if the assay is allowed to have double sets of controls
+                        #check for the control 5-8 and add them to the currect data group
+                        elif parameterlist[2] == 'yes' and level.startswith('control'):
                             addlevel = 'control ' + str(int(level.split(' ')[1])+4)
                             if addlevel in analytedict[sampleline]['Name'].lower():
                                 dataforfile[analyte][level]['n_values'].append(float(analytedict[sampleline]['Std. Conc']))
@@ -410,7 +411,7 @@ if parameterlist[1].lower() == 'lcms':
 
 #generate the graphs and get bunch of stats back.
 #because I am lazy this reports out the aggregated stats, the range stats, the nominal value and initial value
-        resultsdict = xmr_plot(dataforgraph,tolerance,units,analyte,graphfile)
+        resultsdict = xmr_plot(dataforgraph,tolerance,'multi',units,analyte,graphfile)
 
         #work on the writout
         for level in sorted(dataforfile[analyte].keys()):

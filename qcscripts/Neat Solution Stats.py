@@ -313,21 +313,19 @@ for analyte in analyte_list_2:
         
         numberofrecords = 'Mean of Last ' + str(len(lastfive)) + ' Assays'
         writeoutlist.append([numberofrecords,str(float(stats.mode(commonrt,axis=None)[0])),'',str(np.mean(outrt)),
-                            '',str(rounder(np.mean(analytearea))),'','','',,
-                            str(rounder(np.mean(isarea))),'','','','',
-                            str(rounder(np.mean(response))),'','','',,
+                            '',str(rounder(np.mean(analytearea))),'','','',
+                            str(rounder(np.mean(isarea))),'','','',
+                            str(rounder(np.mean(response))),'','','',
                             str(rounder(np.mean(ratio)))])
                         
     if commit:
         analyte_record = record_dict.setdefault(analyte,{})
         rdata = op_list_dict[3]
         analyte_record[date] = {'common rt':rdata[1],'rt range':rdata[2],'out rt':rdata[3],
-                                'mean area':rdata[5],'stdev area':rdata[6],'%cv area':rdata[7],'slope area':rdata[8],
-                                'mean is':rdata[10],'stdev is':rdata[11],'%cv is':rdata[12],'slope is':rdata[13],
-                                'mean response':rdata[15],'stdev response':rdata[16], '%cv response':rdata[17],
-                                'slope response':rdata[18],
-                                'mean ratio':rdata[20],'stdev ratio':rdata[21],'%cv ratio':rdata[22],
-                                'slope ratio':rdata[23]}
+                                'mean area':rdata[5],'stdev area':rdata[6],'%cv area':rdata[7],
+                                'mean is':rdata[9],'stdev is':rdata[10],'%cv is':rdata[11],
+                                'mean response':rdata[13],'stdev response':rdata[14], '%cv response':rdata[15],
+                                'mean ratio':rdata[17],'stdev ratio':rdata[18],'%cv ratio':rdata[19]}
                             
     writeoutlist.append(['',''])
             
@@ -340,9 +338,9 @@ with open(outputfile,'wb')as csvfile:
     for item in writeoutlist:
         wo.writerow(item)
 
-recordheader = ['common rt', 'rt range', 'out rt', 'mean area', 'stdev area', '%cv area', 'slope area',
-                'mean is', 'stdev is', '%cv is', 'slope is', 'mean response', 'stdev response', '%cv response',
-                'slope response', 'mean ratio', 'stdev ratio', '%cv ratio', 'slope ratio']
+recordheader = ['common rt', 'rt range', 'out rt', 'mean area', 'stdev area', '%cv area',
+                'mean is', 'stdev is', '%cv is', 'mean response', 'stdev response', '%cv response',
+                'mean ratio', 'stdev ratio', '%cv ratio']
 
 record_output = [['Neat Solution Record',''],['Compiled',date,'at ' + datetime.datetime.now().strftime('%H:%M:%S')],
                  ['','']]

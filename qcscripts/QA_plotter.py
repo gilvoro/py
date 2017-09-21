@@ -7,7 +7,7 @@ import csv
 import datetime
 import numpy as np
 from scipy import stats
-from bob import *
+from xmr_grapher import *
 
 
 #a script to proccess LCMS data to generate xmr charts

@@ -11,12 +11,11 @@ from lcmsCMplots import *
 #a script to calculate the calibration model of Waters LCMS data for SWGTOX
 #validation
 
+#a list for analyte to skip in the analysis for whatever reason
+skiplist = []
 #the data dic will hold all of our "raw" information
 data = {}
 
-def AIC(residuals,n,k):
-    AICvalue = 2*k + n*np.log(np.sum(np.square(residuals))/n)
-    return AICvalue
 #we set several RE to check various conditions. Namely what the run name is, if we are looking at a
 #duetrated standard
 isrun = re.compile('[r|R]un\s?\d+')
@@ -58,6 +57,9 @@ for run in runkeys:
 #if its duetrated we don't want it
         if istest:
             pass
+        #skip those items in the skiplist
+        elif analyte.lower() in skiplist:
+            pass
 #if its not, check to see if we already have it and if not added it
         else:
             if analyte in analytekeys:
@@ -66,7 +68,7 @@ for run in runkeys:
                 analytekeys.append(analyte)
 
 analytekeys = sorted(analytekeys)
-#go through the dictionary and pull out the target concentrations and measured concnetration and
+#go through the dictionary and pull out the target concentrations and response and
 #and store them in a new dictionary
 dataCM = {}
 for run in runkeys:
@@ -77,9 +79,9 @@ for run in runkeys:
         vialdict = {}
         for sampleline in data[run][analyte]:
 #need the name confirm its a calibrator, use vial to account for repeated injections
-#need the target concnetration and measured concentration for each line
+#need the target concnetration and response for each line
             samplelinedict = data[run][analyte][sampleline]
-#we only accept those lines that start with the word calibrator
+#we only accept those lines that start with the correct word
             if samplelinedict['Name'].lower().startswith('calibrator'):
                 #setup a new dictionary within vialdict for each concentration
                 try:
@@ -125,7 +127,6 @@ for analyte in analytekeys:
 
 #go through and calculate the percent residual
 residualdict = {}
-#for each analyte generate a graph and CSV file
 for analyte in analytekeys:
     
     graphname = assayname + ' validation, ' + analyte + ' graph, ' + datetime.datetime.now().strftime('%Y-%m-%d T%H%M%S') + '.png'
@@ -133,8 +134,7 @@ for analyte in analytekeys:
     filename = assayname + ' validation, ' + analyte + ' data, ' + datetime.datetime.now().strftime('%Y-%m-%d T%H%M%S') + '.csv'     
     csvfile = os.path.join(endfolder, filename)
     conclist = sorted(dataCM[analyte])
-
-#count the number of runs    
+    
     maxnumrun = 0
     for conc in conclist:
         testlen = len(dataCM[analyte][conc])
@@ -142,7 +142,6 @@ for analyte in analytekeys:
             maxnumrun = testlen
         maxnumrun = maxnumrun - 1
 
-#and setup a header with that many run headers
     headerwriteout = ['Concentration']
     x = 1
     while x < maxnumrun:
@@ -153,7 +152,7 @@ for analyte in analytekeys:
     
     writeout = [(analyte,''),('',''),('Calculated Response (Area/IS Area)',''),(headerwriteout + ['mean','stdev','%CV'])]
     rawresponsewriteout = []
-#lead with the raw response numbers on the csv files
+#lead with the raw response numbers
     for conc in conclist:
         rawresponselist = [str(conc)+ ' ng/mL']
         responsemean = np.mean(dataCM[analyte][conc]['all'])
@@ -177,111 +176,111 @@ for analyte in analytekeys:
     writeout.append(('',''))
                          
         
-#we want the residuals for each equation
+#we want this for each equation
     functionlist = sorted(consdict[analyte].keys())
     for function in functionlist:
 #we also want graph the mean data
         fundict = residualdict[analyte].setdefault(function,{'xdata':[],'ydata':[],
                                                              'xmean':[],'ymean':[],
-                                                             'ynorm':[],'ymeannorm':[]})
+                                                             'sdydata':[],'sdymean':[]})
 
         writeout.append((function,''))
         numofcons = len(consdict[analyte][function])
-#add the terms to the writeout
         conswriteout = ['Zero Order Term:',round(consdict[analyte][function][0],9),
                         'First Order Term:',round(consdict[analyte][function][1],9)]
-#if its quadratic we will need the third term as well
         if numofcons == 3:
             conswriteout.append('Second Order Term:')
             conswriteout.append(round(consdict[analyte][function][2],9))
-        
+        writeout.append(conswriteout)
+        writeout.append(['',''])
     
 
-#backcalc is the back calcs, residuals is the percent residuals, normalized is residuals divided by the stdev of the residuals
+
         backcalcwriteout = [('Back Calculations',''),(headerwriteout + ['mean','stdev','%CV'])]
         residualwriteout = [('Percent Residuals',''),(headerwriteout + ['mean'])]
-        normalizedwriteout = [('Normalized Residuals',''),(headerwriteout + ['stdev'])]
+        
+#setup to calculate the standard deviation of the residuals.
+        sdrstats = {'all':[]}
         
         #conclist = sorted(dataCM[analyte])
         for conc in conclist:
             backcalclist = [str(conc) + ' ng/mL']
             residuallist = [str(conc) + ' ng/mL']
-            normalizedlist = [str(conc) + ' ng/mL']
-            rawresiduals = []
+            sdrconclist = sdrstats.setdefault(conc,[])
             bcstats = []
             rstats = []
+            
             for run in sorted(dataCM[analyte][conc]):
                 if run == 'all':
                     pass
                 elif run == 'mean':
                     fundict['xmean'].append(conc)
-                    backcalcmean = dataCM[analyte][conc]['mean'][function]['backcalc']
+                    backcalcmean = dataCM[analyte][conc]['mean'][function][0]
                     residualmean = (backcalcmean-conc)*100/conc
-                    dataCM[analyte][conc]['mean'][function]['residual'] = residualmean
+                    dataCM[analyte][conc]['mean'][function].append(residualmean)
                     fundict['ymean'].append(residualmean)
                 else:
                     fundict['xdata'].append(conc)
-                    backcalc = dataCM[analyte][conc][run][function]['backcalc']
+                    backcalc = dataCM[analyte][conc][run][function][0]
                     residual = (backcalc-conc)*100/conc
-                    dataCM[analyte][conc][run][function]['residual'] = residual
-                    rawresiduals.append(backcalc-conc)
+                    sdresidual = float((backcalc-conc))
+                    dataCM[analyte][conc][run][function].append(residual)
                     fundict['ydata'].append(residual)
                     backcalclist.append(str(round(backcalc,1))+ ' ng/mL')
                     residuallist.append(str(round(residual,1))+ '%')
                     bcstats.append(backcalc)
                     rstats.append(residual)
-            normstd = np.std(rawresiduals)
-            for run in sorted(dataCM[analyte][conc]):
-                
-                if run == 'all':
-                    pass
-                elif run == 'mean':
-                    normalizedmean = (dataCM[analyte][conc]['mean'][function]['backcalc']-conc)/normstd
-                    dataCM[analyte][conc]['mean'][function]['normalized'] = normalizedmean
-                    fundict['ymeannorm'].append(normalizedmean)
-                else:
-                    normalized = (dataCM[analyte][conc][run][function]['backcalc']-conc)/normstd
-                    dataCM[analyte][conc][run][function]['normalized'] = normalized
-                    fundict['ynorm'].append(normalized)
-                    normalizedlist.append(str(round(normalized, 2)) + ' SD')
-                    
+                    sdrconclist.append(sdresidual)
+                    sdrstats['all'].append(sdresidual)
+                                        
 
             bmean = np.mean(bcstats)
             rmean = np.mean(rstats)
             bstd = np.std(bcstats)
             bcv = (bstd/bmean)*100
-            
+                        
             backcalclist = backcalclist + [str(round(bmean,1)) + ' ng/mL',
                                            str(round(bstd,1)) + ' ng/mL',
                                            str(round(bcv,1)) + '%']
             residuallist = residuallist + [str(round(rmean,1)) + '%']
-
-            normalizedlist = normalizedlist + [str(round(normstd,2)) + ' ng/mL']
-
-
+            
             backcalcwriteout.append(backcalclist)
             residualwriteout.append(residuallist)
-            normalizedwriteout.append(normalizedlist)
 
-        AICcvalue = AIC(residualdict[analyte][function]['ymean'],
-                        len(residualdict[analyte][function]['xmean']),numofcons)
+        sdrmean = np.mean(np.nan_to_num(np.asarray(sdrstats['all'])))
+        sdrstd = np.sqrt((np.sum(np.nan_to_num(np.asarray(sdrstats['all']))**2)/(len(sdrstats['all'])-1)))
+        sdrwriteout = [('Standard Residuals', 'mean:', round(sdrmean,2), 'RSME:',round(sdrstd,2)),('',''),(headerwriteout + ['mean'])]
+
+        for conc in sorted(sdrstats.keys()):
+            
+            if conc == 'all':
+                residualdict[analyte][function]['sdydata'] = np.around(np.nan_to_num(np.asarray(sdrstats['all']))/sdrstd,2)
+            else:
+                sdrlist = [str(conc) + ' ng/mL']
+                sdrconcmean = np.mean(np.asarray(sdrstats[conc])/sdrstd)
+                for item in sdrstats[conc]:
+                    if np.isnan(item):
+                        sdrlist.append('nan')
+                    else:
+                        sdrlist.append(str(round((item/sdrstd),2)) + ' se')
+                residualdict[analyte][function]['sdymean'].append(round(sdrconcmean,2))
+                sdrwriteout.append(sdrlist+[round(sdrconcmean,2)])
+                
         
-        writeout.append(conswriteout)
-        writeout.append(['AICc:',str(round(AICcvalue,2))])
-        writeout.append(['',''])
         writeout = writeout + backcalcwriteout
         writeout.append(['',''])
         writeout = writeout + residualwriteout
         writeout.append(['',''])
-        writeout = writeout + normalizedwriteout
+        writeout = writeout + sdrwriteout
         writeout.append(['',''])
 
+    
     with open(csvfile, 'wb') as op:
         wo = csv.writer(op)
         for row in writeout:
             wo.writerow(row)
         
-
+    print 'Making graphs for ' + analyte
     graph(residualdict[analyte], consdict[analyte], dataCM[analyte],analyte, graphfile)
             
             

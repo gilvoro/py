@@ -304,12 +304,14 @@ for item in setuca:
 
 #output the file to the desktop on windows
 filename = 'Turn around times for ' + firstdate +'.csv'
-outputfile = os.path.join(os.path.join(os.environ["HOMEPATH"],"Desktop"), filename)
+outputfile = os.path.join('C:\\scriptfiles\\turnaroundtimereport', filename)
+if not os.path.exists('C:\\scriptfiles\\turnaroundtimereport'):
+    os.makedirs('C:\\scriptfiles\\turnaroundtimereport')
 
 with open(outputfile, 'wb') as op:
     wo = csv.writer(op)
     for row in writeout:
-        wo.writerow(row)                    
-    
-    
-    
+        wo.writerow(row)
+
+os.startfile('C:\\scriptfiles\\turnaroundtimereport')
+sys.exit()

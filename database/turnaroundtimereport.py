@@ -35,7 +35,7 @@ def getdate(text):
         getdate('Please enter in the following format YYYY-MM: ')
         
 #get the year and month for the report
-testyear, testmonth = getdate('Please enter the year and month you would like a report for or type quit to exit.\nPlease enter in the following format YYYY-MM: ')
+testyear, testmonth = getdate('Please enter the year and month you would like a report for \nor type quit to exit.\nPlease enter in the following format YYYY-MM: ')
 
 #from jkominek/chematox/display.py
 conn = psycopg2.connect("host=lims-db.chematox.com dbname=chematox user=reader password=immunoassay")

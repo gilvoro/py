@@ -45,12 +45,13 @@ c.execute("set application_name = 'forensic dashboard'")
 conn.commit()
 
 #the sql queary
-c.execute("""select t.id, r.id, ss.id, ss.created, r.certified, t.type, tt.analyte, tt.method, tt.submethod from requests r, tests t, samplesets ss, testtypes tt where extract(year from r.certified)= """ +testyear+ """ and extract(month from r.certified)= """ +testmonth+ """ and r.id = t.request and r.sample_set = ss.id and t.type = tt.id""")
+c.execute("""select t.id, r.id, r.request_type, ss.id, ss.created, r.certified, t.type, tt.analyte, tt.method, tt.submethod from requests r, tests t, samplesets ss, testtypes tt where extract(year from r.certified)= """ +testyear+ """ and extract(month from r.certified)= """ +testmonth+ """ and r.id = t.request and r.sample_set = ss.id and t.type = tt.id""")
 
 sqldata = {}
-for test, request, sampleset, creation, certified, testtype, analyte, method, submethod in c:
+for test, request, requesttype, sampleset, creation, certified, testtype, analyte, method, submethod in c:
 #collect the request related data....
     sqldata.setdefault(request, {'sampleset':sampleset,
+                                 'request type':requesttype,
                                  'creation date':creation,
                                  'certified':certified,
                                  'tests':{}})
@@ -59,26 +60,27 @@ for test, request, sampleset, creation, certified, testtype, analyte, method, su
     
 #a dictionary that list all of the analytes in an assay
 assaydict = {'bac':[393],
-             'gc/ms scans':[397],
+             'gc/ms scans':[397,218,270,130,168,204,533,182,386],
              'ah':[691,694,692],
              'amp':[666,665,654,667],
-             'an':[598,597],
+             'an':[598,597,596],
              'benzo':[610,584,585,583,581,590,580,582,589,586],
              'benzo scans':[588],
              'can':[570,571,688,685,682],
-             'alkaline':[155,147,72,493,115,84,169,50,290,71,433,47,158,208,111,465,309,140,55,341,46,58,294,179,152,43],
+             'alkaline':[155,147,72,493,115,84,169,50,290,71,433,47,158,208,111,465,309,140,55,341,46,58,294,179,152,43,218,61,
+                         415,117,94],
              'opiates/oxys':[123,339,305,320,356,366,365],
-             'other volatiles':[392,490,497]}
+             'additional volatiles':[392,490,497]}
 
 #lists that contain the assays on differnet types instruments
 methoddict = {'GC/MS':['alkaline','opiates/oxys','gc/ms scans'],
               'LC-MS/MS':['ah','amp','an','benzo','can'],
-              'GCFID':['bac']}
+              'GCFID':['bac','additional volatiles']}
 
 #other list used during the script
 assaycountkeys = ['GCFID','elisa','GC/MS','LC-MS/MS','other']
 outputkeys = ['total','bac','bac_e','bac_e_c','bac_e_c+','other']
-breakdownkeys = ['dsfa','bac_e_g', 'bac_e_g+','bac_e_l','bac_e_l+','bac_e_gl','opiates']
+breakdownkeys = ['dsfa','law','ba','coroner','bac_e_g','bac_e_g+','bac_e_l','bac_e_l+','bac_e_gl']
 #the list for undefined tests
 ucalist = []
 
@@ -89,6 +91,7 @@ for entry in sqldata.keys():
                                         {'begin':sqldata[entry]['creation date'],
                                         'end':sqldata[entry]['certified'],
                                         'delta':(sqldata[entry]['certified']-sqldata[entry]['creation date']).days,
+                                        'type':sqldata[entry]['request type'],
                                         'assaycount':{'elisa':0,
                                                       'GCFID':0,
                                                       'LC-MS/MS':0,
@@ -144,7 +147,8 @@ for entry in sqldata.keys():
             ucalist.append(tuple(testlist))
 
 #dict for the human readable output            
-outputdict = {'total':['All Samples'],
+outputdict = {'all':['All samples'],
+              'total':['Total Included Samples'],
               'bac':['Blood Alcohol Only'],
               'bac_e':['Blood Alcohol and No Confirmations'],
               'bac_e_g':['One GC/MS Assay'],
@@ -155,27 +159,40 @@ outputdict = {'total':['All Samples'],
               'bac_e_c+':['Multiple Confirmations'],
               'bac_e_gl':['At least one GC/MS and one LC-MS/MS Assay'],
               'dsfa':['DSFA cases'],
-              'opiates':['Had Opiate/Oxy Assay'],
+              'law':['Law Enforcement'],
+              'ba':['Blood Alcohol Only'],
+              'coroner':['Coroner'],
               'other':['Had Some Other Test']}
 
 #this probably could be an output of the getdate
 firstdate = testyear + '-' + testmonth
 over120 = []
+requesttypeother = []
                                  
 for sample in sorted_data:
     countlist = []
     sampledict = sorted_data[sample]
+    outputdict['all'].append(sampledict['delta'])
 #if its a DSFA case exclude it
     if 'gc/ms scans' in sampledict['assays'] and 'benzo scans' in sampledict['assays']:
         outputdict['dsfa'].append(sampledict['delta'])
 #if the sample has delta 120 or more exclude it from the totals
     elif sampledict['delta'] > 120:
         over120.append(sample)
+#currently I think this is only validation samples so take them out
+    elif sampledict['type'] == 'other':
+        requesttypeother.append(sample)
+        pass
     else:
         outputdict['total'].append(sampledict['delta'])
-#if it has opiates as an assay we track in addition
-        if 'opiates/oxys' in sampledict['assays']:
-            outputdict['opiates'].append(sampledict['delta'])
+#lets get a break down of different request types
+        if sampledict['type'] == 'lawenforcement':
+            outputdict['law'].append(sampledict['delta'])
+        elif sampledict['type'] == 'bloodalcohol':
+            outputdict['ba'].append(sampledict['delta'])
+        elif sampledict['type'] == 'coroner':
+            outputdict['coroner'].append(sampledict['delta'])
+#move the assay counts in to an ordered list
         for key in assaycountkeys:
             countlist.append(sampledict['assaycount'][key])
 #if we have another random test I want it out of the group as a whole.
@@ -239,16 +256,41 @@ for sample in sorted_data:
                         outputdict['bac_e_c+'].append(sampledict['delta'])
                         outputdict['bac_e_gl'].append(sampledict['delta'])
 
+temparray = np.asarray(outputdict['all'][1:])
+alltotal = float(len(temparray))
+mean = np.mean(temparray)
+median = np.median(temparray)
+minnum = np.amin(temparray)
+maxnum = np.amax(temparray)
+per = np.percentile(temparray,95)
+totalwriteout =[outputdict['all'][0],
+                 str(alltotal) + ' samples',
+                 str(round(mean))+' days',
+                 str(round(median))+' days',
+                 str(round(minnum))+' days',
+                 str(round(maxnum))+' days',
+                 str(round(per))+' days']
 
 writeout = [['Turn Around Times',firstdate],
+            ['',''],
+            ['','#samples','Mean','Median','Shortest','Longest','95% completed'],
+            totalwriteout,
+            ['',''],
+            ['The Following Totals exclude the following samples:','#samples','% of total'],
+            ['With days to certified over 120 days',str(len(over120))+' samples',str(round((len(over120)/alltotal)*100,))+'%'],
+            ['DSFAs cases',str(len(outputdict['dsfa'][1:]))+' samples', str(round((len(outputdict['dsfa'][1:])/alltotal)*100,1))+'%'],
+            ['Request Type: Other',str(len(requesttypeother))+' samples', str(round((len(requesttypeother)/alltotal)*100,1))+'%'],
+            ['',''],
             ['Totals',''],
-            ['Types of test','#samples','Mean','Median','Shortest','Longest','95% completed']]
+            ['Types of test','#samples','% of total','Mean','Median','Shortest','Longest','95% completed']]
 
 #go through the output dict and get stats.  If the list contains no entries just n/a it
+includedtotal = float(len(outputdict['total'][1:]))
 for key in outputkeys:
     if outputdict[key][1:]:
         temparray = np.asarray(outputdict[key][1:])
         total = len(temparray)
+        pertotal = round((total/includedtotal)*100,1)
         mean = np.mean(temparray)
         median = np.median(temparray)
         minnum = np.amin(temparray)
@@ -256,6 +298,7 @@ for key in outputkeys:
         per = np.percentile(temparray,95)
         writeout.append([outputdict[key][0],
                          str(total) + ' samples',
+                         str(pertotal) + '%',
                          str(round(mean))+' days',
                          str(round(median))+' days',
                          str(round(minnum))+' days',
@@ -267,13 +310,17 @@ for key in outputkeys:
 
 writeout.append(['',''])
 writeout.append(['Break down by type',''])
-writeout.append(['Types of test','#samples','Mean','Median','Shortest','Longest','95% completed'])
+writeout.append(['Types of test','#samples','% of total','Mean','Median','Shortest','Longest','95% completed'])
 
 #go thru the breakdownkey and collect stats, if there aren't any entries n/a the rest             
 for key in breakdownkeys:
     if outputdict[key][1:]:
         temparray = np.asarray(outputdict[key][1:])
         total = len(temparray)
+        if key == 'dsfa':
+            pertotal = round((len(outputdict['dsfa'][1:])/alltotal)*100,1)
+        else:
+            pertotal = round((total/includedtotal)*100,1)
         mean = np.mean(temparray)
         median = np.median(temparray)
         minnum = np.amin(temparray)
@@ -281,6 +328,7 @@ for key in breakdownkeys:
         per = np.percentile(temparray,95)
         writeout.append([outputdict[key][0],
                          str(total) + ' samples',
+                         str(pertotal) + '%',
                          str(round(mean))+' days',
                          str(round(median))+' days',
                          str(round(minnum))+' days',

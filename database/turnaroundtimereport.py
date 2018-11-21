@@ -33,7 +33,7 @@ def getdate(text):
     else:
         print 'Date not in YYYY-MM format'
         getdate('Please enter in the following format YYYY-MM: ')
-        
+
 #get the year and month for the report
 testyear, testmonth = getdate('Please enter the year and month you would like a report for \nor type quit to exit.\nPlease enter in the following format YYYY-MM: ')
 
@@ -41,7 +41,7 @@ testyear, testmonth = getdate('Please enter the year and month you would like a 
 conn = psycopg2.connect("host=lims-db.chematox.com dbname=chematox user=reader password=immunoassay")
 c = conn.cursor()
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
-c.execute("set application_name = 'forensic dashboard'")
+c.execute("set application_name = 'turn around time query'")
 conn.commit()
 
 #the sql queary
@@ -57,7 +57,7 @@ for test, request, requesttype, sampleset, creation, certified, testtype, analyt
                                  'tests':{}})
 #the test specific data
     sqldata[request]['tests'].setdefault(test,[testtype, method, submethod,analyte.encode('ascii','ignore')])
-    
+
 #a dictionary that list all of the analytes in an assay
 assaydict = {'bac':[393],
              'gc/ms scans':[397,218,270,130,168,204,533,182,386],
@@ -112,7 +112,7 @@ for entry in sqldata.keys():
                 sampledict['assays'].append('benzo scans')
             addedcheck = 1
 #currently not collecting data based on the different types of ELISA, so just listing it once
-#and updateding the count#ELISA 
+#and updateding the count#ELISA
         elif testlist[1] == 'ELISA':
             if not 'elisa' in sampledict['assays']:
                 sampledict['assays'].append('elisa')
@@ -146,7 +146,7 @@ for entry in sqldata.keys():
             sampledict['assaycount']['other'] += 1
             ucalist.append(tuple(testlist))
 
-#dict for the human readable output            
+#dict for the human readable output
 outputdict = {'all':['All samples'],
               'total':['Total Included Samples'],
               'bac':['Blood Alcohol Only'],
@@ -168,7 +168,7 @@ outputdict = {'all':['All samples'],
 firstdate = testyear + '-' + testmonth
 over120 = []
 requesttypeother = []
-                                 
+
 for sample in sorted_data:
     countlist = []
     sampledict = sorted_data[sample]
@@ -243,7 +243,7 @@ for sample in sorted_data:
                 elif countlist[2] > 1 and countlist[3] == 0:
                         outputdict['bac_e_g+'].append(sampledict['delta'])
                         outputdict['bac_e_c+'].append(sampledict['delta'])
-#if we have just one lc test add it to bac_e_l and bac_e_c                        
+#if we have just one lc test add it to bac_e_l and bac_e_c
                 elif countlist[3] == 1 and countlist[2] == 0:
                         outputdict['bac_e_g'].append(sampledict['delta'])
                         outputdict['bac_e_c'].append(sampledict['delta'])
@@ -251,7 +251,7 @@ for sample in sorted_data:
                 elif countlist[3] > 1 and countlist[2] == 0:
                         outputdict['bac_e_g+'].append(sampledict['delta'])
                         outputdict['bac_e_c+'].append(sampledict['delta'])
-#if we have a least one gc and at least one lc add it to the bac_e_gl and bac_e_c+                        
+#if we have a least one gc and at least one lc add it to the bac_e_gl and bac_e_c+
                 elif countlist[2] != 0 and countlist[3] != 0:
                         outputdict['bac_e_c+'].append(sampledict['delta'])
                         outputdict['bac_e_gl'].append(sampledict['delta'])
@@ -312,7 +312,7 @@ writeout.append(['',''])
 writeout.append(['Break down by type',''])
 writeout.append(['Types of test','#samples','% of total','Mean','Median','Shortest','Longest','95% completed'])
 
-#go thru the breakdownkey and collect stats, if there aren't any entries n/a the rest             
+#go thru the breakdownkey and collect stats, if there aren't any entries n/a the rest
 for key in breakdownkeys:
     if outputdict[key][1:]:
         temparray = np.asarray(outputdict[key][1:])

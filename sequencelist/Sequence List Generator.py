@@ -2,7 +2,6 @@
 #updated 2016-09-22
 #--------------------------------------------------------------------------------------------------------------
 
-
 import os
 import csv
 import re
@@ -12,6 +11,7 @@ import calendar
 import Tkinter, tkFileDialog
 import subprocess
 import getpass
+import math
 
 
 cyear = int(datetime.date.today().strftime('%Y'))
@@ -603,6 +603,7 @@ for item in standarddict['MORlist']:
         pass
     else:
         MORcontrols += 1
+        
 
 #build the list of ct numbers
 #---------------------------------------------------------------------------------------------------------------
@@ -654,15 +655,19 @@ sequencelist = []
 #build sequence list for LCMS
 #--------------------------------------------------------------------------------------------------------------
 def sequencelistbuilder(ctnums, MORcount, matrixcontrol):
-    
     global curpos
 
     sequencelist.append(solventline())
     
     if standardlist[2][1].lower() == 'even' or standardlist[2][1].lower() == 'evenly':
-        controlcountmax = len(ctnums)/(MORcount + 1)
+        controlcountmax = math.ceil(float(len(ctnums))/(MORcount + 1))
+        if len(ctnums)%controlcountmax == 0:
+            controlcountmax = math.floor(float(len(ctnums))/(MORcount + 1))
     else:
         controlcountmax = int(standardlist[2][1])
+
+    if len(ctnums) < 10:
+        MORcount = 0        
 
     for item in standarddict['BORlist'+ matrixcontrol]:
         if item[0] == 'solvent':
@@ -762,7 +767,8 @@ def sequencelistbuildergcms(ctnums, MORcount, matrixcontrol):
     sequencelist.append(solventlinegcms())
     
     if standardlist[2][1].lower() == 'even' or standardlist[2][1].lower() == 'evenly':
-        controlcountmax = len(ctnums)/(MORcount + 1)
+        controlcountmax = math.ceil(len(ctnums)/(MORcount + 1))
+        print controlcountmax
     else:
         controlcountmax = int(standardlist[2][1])
 

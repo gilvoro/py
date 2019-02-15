@@ -9,7 +9,8 @@ import Tkinter, tkFileDialog
 import math
 
 name_dict = {'THC':'CAN','Doxylamine':'AH', 'Amphetamine':'AMP',
-             'Carisoprodol':'AN', 'Diazepam':'Benzo','Hydroxyzine':'HXY'}
+             'Carisoprodol':'AN', 'Diazepam':'Benzo','Hydroxyzine':'HXY',
+             'Codeine':'Opioids'}
 desktop = os.path.expanduser('~\Desktop')
 date = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -348,6 +349,7 @@ record_output = [['Neat Solution Record',''],['Compiled',date,'at ' + datetime.d
 for analyte in analyte_list_2:
     record_output.append(['analyte',analyte])
     record_output.append(['']+recordheader)
+    #print record_dict[analyte].keys()
     for date in sorted(record_dict[analyte].keys()):
         templist = [date]
         for item in recordheader:

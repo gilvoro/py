@@ -64,7 +64,6 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
         #if we have initial data then we get a number of ranges equal to the number of fqc
         else:
             if len(ymeans) > 1:
-                print 'I went with the if'
                 rd = np.zeros(len(ymeans))
                 rd[0] = abs(ymeans[0]-datadict[level]['i_mean'])
                 for a in range(0, len(rd)-1):
@@ -72,7 +71,6 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
                 r_mean = np.mean(rd)
             #special case for a single fqc
             else:
-                print 'i went for else'
                 rd = np.asarray([abs(ymeans[0]-datadict[level]['i_mean'])])
                 r_mean = abs(ymeans[0]-datadict[level]['i_mean'])
             rxdata=xdata
@@ -185,7 +183,6 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
             
         
         row += 1
-        print ydata
         outputdict[level] = {'agg':[str(round(m_mean,2))+units,
                                     str(round(np.nanstd(normydata),3))+units,
                                     str(round((np.nanstd(normydata)/float(m_mean))*100,3))+ "%",

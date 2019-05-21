@@ -6,7 +6,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
     outputdict= {}
     strangeanalytes = ['ethanol']
     n_rows = len(datadict.keys())
-    
+
     #setup figure and subplots, with the number of rows equal to the number of control clevels
     fig, axes = plt.subplots(nrows=n_rows,ncols=2, figsize =(11,8))
     fig.suptitle(analyte.upper())
@@ -14,8 +14,8 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
     #set the titles
     axes[0,0].set_title('Range Plot')
     axes[0,1].set_title('Mean Plot')
-    row = 0        
-    
+    row = 0
+
     #go through level by level
     for level in sorted(datadict.keys()):
         #label the rows at the control level
@@ -23,14 +23,14 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
         n_value = datadict[level]['n_value']
         xlabels = datadict[level]['xlabels']
         #the xdata is equal to the number of FQC
-        xdata = range(1, len(xlabels)+1)     
+        xdata = range(1, len(xlabels)+1)
         ydata = datadict[level]['ydata']
         #get the means for each fqc
         ymeans = []
         for fqc in ydata:
-            ymeans.append(np.mean(fqc))
+            ymeans.append(np.nanmean(fqc))
         #get the grand mean
-        m_mean = np.mean(ymeans)
+        m_mean = np.nanmean(ymeans)
         #based on the nominal value get the ticks based on the tolerances
         if tolerancetype == 'add':
             yraw_labels = n_value+np.asarray(tolerance)
@@ -42,7 +42,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
         y_labels = []
         for item in yraw_labels:
             y_labels.append(str(item)+ str(units))
-                
+
         #range calculations
         #if we don't have initial data we get a number of ranges equal to fqc - 1
         if datadict[level]['i_mean'] == 'none':
@@ -50,7 +50,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
                 rd = np.zeros(len(ymeans)-1)
                 for a in range(0, len(rd)):
                     rd[a] = abs(ymeans[a+1]-ymeans[a])
-                r_mean = np.mean(rd)
+                r_mean = np.nanmean(rd)
             else:
             #speical case if there is a single fqc
                 rd = np.zeros(1)
@@ -68,7 +68,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
                 rd[0] = abs(ymeans[0]-datadict[level]['i_mean'])
                 for a in range(0, len(rd)-1):
                     rd[a+1] = abs(ymeans[a+1]-ymeans[a])
-                r_mean = np.mean(rd)
+                r_mean = np.nanmean(rd)
             #special case for a single fqc
             else:
                 rd = np.asarray([abs(ymeans[0]-datadict[level]['i_mean'])])
@@ -108,10 +108,10 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
                     ratiolabel.append(str(int(round((a-1)*100)))+'%')
 
         ratiolabel.insert((len(ratiolabel)/2),'nominal\nvalue')
-        
-                          
+
+
     #plot the range date
-        axes[row,0].axis([0,len(xdata)+1,0,rangeymax])        
+        axes[row,0].axis([0,len(xdata)+1,0,rangeymax])
         axes[row,0].xaxis.set_ticks_position('bottom')
         #range x-axis setup
         axes[row,0].set_xticks(range(1,len(rxdata)+1,1))
@@ -129,7 +129,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
         axes[row,0].text(0.2,rangeymax*0.7, 'Mean: ' + str(round(r_mean,3))+units, fontsize = 'x-small', color = 'r')
         #plot the range data
         axes[row,0].plot(rxdata,rd,'ko--', markersize=5)
-        
+
     #plot the measured data
         axes[row,1].axis([0,len(xdata)+1,yraw_labels[0],yraw_labels[-1]])
         #setup the yticks for the left axis
@@ -160,7 +160,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
                 normydata.append(np.asarray(item))
             else:
                 normydata.append(np.asarray(item))
-                                       
+
         axes[row,1].plot(xdata,normydata,'ko',markersize=5)
         axes[row,1].plot(xdata,ymeans,'rs-',markersize=5)
         #put in a bunch of fixed lines and labels
@@ -180,8 +180,8 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
         rangeoutputlist = []
         for diff in rd:
             rangeoutputlist.append(str(round(diff,3))+units)
-            
-        
+
+
         row += 1
         outputdict[level] = {'agg':[str(round(m_mean,2))+units,
                                     str(round(np.nanstd(normydata),3))+units,
@@ -198,8 +198,7 @@ def xmr_plot(datadict, tolerance, tolerancetype, units, analyte, filename):
             outputdict[level]['i_mean'] = 'none'
         else:
             outputdict[level]['i_mean'] = str(datadict[level]['i_mean'])+units
-    
+
     print 'making graph for ' + analyte
     plt.savefig(filename)
     return(outputdict)
-

@@ -13,8 +13,8 @@ from xmr_grapher import *
 #a script to proccess LCMS data to generate xmr charts
 #Define file locations
 inputloc = 'C:/scriptfiles/xmr inputs'
-outputloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr plots'
-parametersloc = r'//radon.chematox.com/public/labtools/jimscripts/xmr parameters'
+outputloc = r'//admin.chematox.com/public/labtools/jimscripts/xmr plots'
+parametersloc = r'//admin.chematox.com/public/labtools/jimscripts/xmr parameters'
 
 #file locations for testing
 #inputloc = '/home/james/Desktop/input'
@@ -74,10 +74,10 @@ def qanumcheck(setname):
 def reviewcheck(filedict):
     print 'Please review the following for accuracy:'
     for a in range(len(filedict.keys())):
-        item = sorted(filedict.keys())[a]           
+        item = sorted(filedict.keys())[a]
         print  str(a+1) + '.) ' + item + ' - ' + filedict[item]['datarun']
 
-#function to get the paramters for the desired assay.  Currently returns a list and a dictionary        
+#function to get the paramters for the desired assay.  Currently returns a list and a dictionary
 def getparameters(fileloc):
     #open the parameter file
     #this will contain currently the name of the assay and the instrument type
@@ -214,7 +214,7 @@ def previousdatafun(forscriptfolder,fqclisttemp):
                         print x, 'duplicates data already uploaded and will not be used'
 
     return datadict, fqclisttemp
-        
+
 #setup a dict for fqc:filelocations
 fqcdict = {}
 #get which assay is being used
@@ -239,7 +239,7 @@ for newfile in os.listdir(inputloc):
         if datetest:
         #if there is a date put the FQC number and date together
             fqccomp = fqcname + '\n' + str("".join(datetest.group().split()))
-        #check for duplicate files in the keys of fqcdict        
+        #check for duplicate files in the keys of fqcdict
             if fqccomp in fqcdict.keys():
                 print fqcname + ' has already had one file uploaded.\nIf a second is uploaded it will override the first.'
                 addfile = raw_input('If you wish to proceed with overriding the file please type yes: ')
@@ -258,7 +258,7 @@ for newfile in os.listdir(inputloc):
     #if we are to add the file add it to the fqcdict along with the pathway
     if addfilecheck:
         fqcdict[fqccomp] = {'fileloc':os.path.join(inputloc,newfile)}
-print ' '       
+print ' '
 
 #open the parameter file
 parameterlist, parameterdict = (getparameters(parameterfile))
@@ -278,7 +278,7 @@ if parameterlist[1].lower() == 'lcms':
     #get the qa-number for the controls
     controlqanum = qanumcheck('controls')
     print ' '
-    
+
     #check for a folder in output related to this qanum if there isn't one make it
     controlqafolder = os.path.join(outputloc,
                                    parameterlist[1].lower()+'-'+parameterlist[0].lower()+'-'+controlqanum)
@@ -292,26 +292,33 @@ if parameterlist[1].lower() == 'lcms':
     initialdict = lcmsinitialdata(forscriptfolder)
 
     #get previous data
-    dataforfile,fqcrunlist = previousdatafun(forscriptfolder, fqclist) 
+    dataforfile,fqcrunlist = previousdatafun(forscriptfolder, fqclist)
 
    #terms that will invalidate control usage
-    non_control_list = ['dilution', 'new', 'old', 'utak']
-    
-    
+    non_control_list = ['dilution', 'new', 'old', 'utak','elisa','6mam&dhc']
+    #for analytes that don't have quants
+    non_quant_list = ['6MAM']
+
     for fqc in fqcrunlist:
+        print fqc
         #call datasort and get back the dict
         workingdata = lcmsdatasort(fqcdict[fqc]['fileloc'])
         #go through the data by analyte
         for analyte in workingdata.keys():
+            print analyte
             #if the analyte is a IS move on
             istest = isis.search(analyte)
             if istest:
+                pass
+            #if the analyte isn't quanted the system will not work.
+            elif analyte in non_quant_list:
                 pass
             else:
                 dataforfile.setdefault(analyte,{})
                 analytedict = workingdata[analyte]
                 #only looking for data for those level specified
                 for level in sorted(parameterdict.keys()):
+                    print level
                     measurelist = []
                     #need to turn the sampline numbers into int so they sort right and we see the data in order
                     for item in sorted(map(int,analytedict.keys())):
@@ -333,9 +340,19 @@ if parameterlist[1].lower() == 'lcms':
                             if addlevel in analytedict[sampleline]['Name'].lower():
                                 dataforfile[analyte][level]['n_values'].append(float(analytedict[sampleline]['Std. Conc']))
                                 measurelist.append(analytedict[sampleline]['ng/mL'])
-                        #if the list actually has items in it add them to dict
-                        if len(measurelist) > 0:
-                            dataforfile[analyte][level][fqc]= map(float,measurelist)
+                    #if the list actually has items in it add them to dict
+                    if len(measurelist) > 0:
+                        templist = []
+                        #dataforfile[analyte][level][fqc]= map(float,measurelist)
+                        for item in measurelist:
+                            try:
+                                value = float(item)
+                            except ValueError:
+                                #print 'A non-number encounter for a measurement of ' + analyte + ' at ' + level
+                                value = np.nan
+                            templist.append(value)
+                        dataforfile[analyte][level][fqc] = templist
+                        print templist
 
     #writeout the data for the script to use next time
     outputscriptfilename = 'script data-' + date + '.csv'
@@ -362,7 +379,7 @@ if parameterlist[1].lower() == 'lcms':
     #by analyte make the graph and the the writeout file
     for analyte in sorted(dataforfile.keys()):
         #make a human write out file
-        humanwo = [['Compiled on:',readdate],['','']]     
+        humanwo = [['Compiled on:',readdate],['','']]
         #setup the file names, the units, tolerances for the graph and the graphdict
         name = analyte + ' ' + date
         graphfile = os.path.join(controlqafolder, name + '.png')
@@ -386,13 +403,13 @@ if parameterlist[1].lower() == 'lcms':
                     dataforgraph[level]['i_mean'] = 'none'
             else:
                 dataforgraph[level]['i_mean'] = 'none'
-            
+
             leveldict = analytedict[level]
             #check to see if we have more then one value for the nominal value if we do let the user know
             if len(set(leveldict['n_values'])) > 1:
                 print analyte + ' ' + level + ' has inconsistant nominal values'
 
-            #because of round in targetlynx we have to manually set the level for THC-COOH for control 3 
+            #because of round in targetlynx we have to manually set the level for THC-COOH for control 3
             if analyte.lower() == 'thc-cooh' and level == 'control 3':
                 dataforgraph[level]['n_value'] = 125.0
             #otherwise we use the most common value in the n_value list as the nonimal level
@@ -445,7 +462,7 @@ if parameterlist[1].lower() == 'lcms':
             for row in humanwo:
                 wo.writerow(row)
 
-    
+
     #check for a folder in output related to this qanum if there isn't one make it
     olduploadscon = os.path.join(controlqafolder,'old uploads')
     if not os.path.exists(olduploadscon):
@@ -460,7 +477,7 @@ if parameterlist[1].lower() == 'lcms':
     oldcsvfile = os.path.join(controlqafolder, 'old csv')
     if not os.path.exists(oldcsvfile):
         os.makedirs(oldcsvfile)
-                          
+
     for item in os.listdir(controlqafolder):
         if item.endswith('.csv') and date not in item:
             shutil.move(os.path.join(controlqafolder, item), os.path.join(oldcsvfile, item))
@@ -469,7 +486,7 @@ if parameterlist[1].lower() == 'lcms':
             shutil.move(os.path.join(controlqafolder, item), os.path.join(oldgraphfile, item))
             print item + ' moved'
 
-    print ' '        
+    print ' '
     for fqc in fqclist:
         shutil.copy(fqcdict[fqc]['fileloc'],os.path.join(olduploadscon,fqc.split('\n')[0] + ' ' + date + '.txt'))
         print fqcdict[fqc]['fileloc'] + ' copied'
@@ -480,13 +497,10 @@ if parameterlist[1].lower() == 'fid':
     from fidrundatasort import *
 
     for item in parameterlist[2]:
-        
+
         #setup to get the data
         dataforfile = {}
 
-        
-
-    
 
 
 
@@ -543,7 +557,10 @@ if parameterlist[1].lower() == 'fid':
 
 
 
-    
+
+
+
+
 print 'Type all if you want to delete all input files,\ntype none to delete none of the input files,\ntype some to delete select files'
 deletecheck = raw_input('Please enter all, none, or some:')
 
@@ -557,30 +574,3 @@ elif deletecheck.lower() == 'some':
                 os.remove(os.path.join(inputloc,newfile))
 
 raw_input('hit enter to close the program')
-    
-                           
-
-            
-
-                
-
-                    
-            
-    
-    
-                    
-        
-
-
-
-
-    
-               
-                                    
-        
-
-
-
-
-
-        

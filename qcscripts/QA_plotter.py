@@ -300,12 +300,10 @@ if parameterlist[1].lower() == 'lcms':
     non_quant_list = ['6MAM']
 
     for fqc in fqcrunlist:
-        print fqc
         #call datasort and get back the dict
         workingdata = lcmsdatasort(fqcdict[fqc]['fileloc'])
         #go through the data by analyte
         for analyte in workingdata.keys():
-            print analyte
             #if the analyte is a IS move on
             istest = isis.search(analyte)
             if istest:
@@ -318,7 +316,6 @@ if parameterlist[1].lower() == 'lcms':
                 analytedict = workingdata[analyte]
                 #only looking for data for those level specified
                 for level in sorted(parameterdict.keys()):
-                    print level
                     measurelist = []
                     #need to turn the sampline numbers into int so they sort right and we see the data in order
                     for item in sorted(map(int,analytedict.keys())):
@@ -352,7 +349,6 @@ if parameterlist[1].lower() == 'lcms':
                                 value = np.nan
                             templist.append(value)
                         dataforfile[analyte][level][fqc] = templist
-                        print templist
 
     #writeout the data for the script to use next time
     outputscriptfilename = 'script data-' + date + '.csv'
@@ -439,13 +435,16 @@ if parameterlist[1].lower() == 'lcms':
                 if fqc == 'n_values':
                     pass
                 else:
-                    t_mean = round(np.mean(dataforfile[analyte][level][fqc]),2)
-                    t_std = round(np.std(dataforfile[analyte][level][fqc]),3)
+                    t_mean = round(np.nanmean(dataforfile[analyte][level][fqc]),2)
+                    t_std = round(np.nanstd(dataforfile[analyte][level][fqc]),3)
                     t_cv = round((t_std/t_mean)*100,3)
                     templist = [fqc.split('\n')[0],fqc.split('\n')[1], str(t_mean)+units,
                                 str(t_std)+units, str(t_cv)+'%']
                     for a in dataforfile[analyte][level][fqc]:
-                        templist.append(str(a) + units)
+                        if np.isnan(a):
+                            pass
+                        else:
+                            templist.append(str(a) + units)
                     humanwo.append(templist)
             humanwo.append(['',''])
             humanwo.append(['Aggregate Mean', 'Aggregate St. Dev.', 'Aggregate %CV', 'Lower Control Limit','Upper Control Limit'])

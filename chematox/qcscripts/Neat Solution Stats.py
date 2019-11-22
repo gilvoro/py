@@ -151,9 +151,9 @@ for analyte in analyte_list:
                     area_list.append(float(analyte_dict[line]['Area']))
                     isarea_list.append(float(analyte_dict[line]['IS Area']))
                     try:
-                        ionratio_list.append(float(analyte_dict[line]['1บ Ratio Actual']))
+                        ionratio_list.append(float(analyte_dict[line]['1ยบ Ratio Actual']))
                     except:
-                        ionratio_list.append(float(analyte_dict[line]['1บ Ratio (Act)']))
+                        ionratio_list.append(float(analyte_dict[line]['1ยบ Ratio (Act)']))
                     rr_list.append(float(analyte_dict[line]['Response']))
 
                 else:

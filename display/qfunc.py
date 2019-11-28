@@ -6,7 +6,7 @@ import os
 dirloc = 'C:\\pve\\qd\\testfiles'
 dfiles = ['skquotes','scquotes']
 
-def qchooser(sdict):
+def qchooser(sdict,dfiles,dirloc):
   quotedict = {}
   seldict = {}
   random.seed(datetime.datetime.now().year+datetime.datetime.now().month+

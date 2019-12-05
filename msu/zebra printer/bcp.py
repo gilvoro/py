@@ -6,6 +6,7 @@ def zebraprintbc(pname, label):
     bos = 200 - (10*(ll+2))                                                                                                                                                                                                                                                                                                                                                                                               - (5*ll)
     text = '^XA^FO%s,20^BY1,3^B3N,N,60,N,N^FD%s^FS^FO%s,85^ADN36,20^FD%s^FS^XZ' % (str(bos), label, str(los), label)
     data = (text).encode()
+    print(data)
 
     printer = win32print.OpenPrinter(pname)
 

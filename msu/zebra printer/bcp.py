@@ -1,6 +1,6 @@
 import win32print
 
-def zebraprint(pname, label):
+def zebraprintbc(pname, label):
     ll = len(label)/2
     los = 200 - (10*ll)
     bos = 200 - (10*(ll+2))                                                                                                                                                                                                                                                                                                                                                                                               - (5*ll)

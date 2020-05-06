@@ -5,8 +5,8 @@ import tkinter
 
 from tkinter import filedialog
 
-from sppcsv import *
-from spppdf import *
+from ochem_sp_csv import *
+from ochem_sp_pdf import *
 
 #setup the default pathway
 desktop = os.path.expanduser('~\Desktop')

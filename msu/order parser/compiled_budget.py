@@ -15,7 +15,7 @@ if now.month in [1,2,3,4,5,6]:
     fy = 'fy'+str(now.year)
     year = str(now.year)
 else:
-    fy = 'fy'+str(mow.year + 1)
+    fy = 'fy'+str(now.year + 1)
     year = str(now.year + 1)
 
 #file locations
@@ -23,14 +23,15 @@ rloc = 'c:\\Users\\jlaughl6\\User Assets\\script files\\budget\\for_script\\base
 dloc = os.path.join('c:\\Users\\jlaughl6\\User Assets\\script files\\budget',fy)
 nploc = os.path.join(dloc,'database\\not_posted_db')
 pfloc = os.path.join(dloc,'processed_reports')
-opname = os.path.join(dloc,'compiled_reports\\budget report ' + fy + ' as of ' + ts + '.xlsx')
+opname = os.path.join(dloc,'compiled_reports\\budget_report_' + fy + '_as of_' + ts + '.xlsx')
 
 #make a blank data frame
 df =  pd.DataFrame()
 
 #for every file in the fiscal year processed_reports add that data to the dataframe
 for file in os.listdir(pfloc):
-    if file.endswith('-processed.xlsx'):
+    if file.endswith('_processed.xlsx'):
+        print('processing: ' + file)
 #get the purchase method based on the filename
         method = file.split('-')[4]
         tempdf = pd.read_excel(os.path.join(pfloc,file),

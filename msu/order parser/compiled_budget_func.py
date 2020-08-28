@@ -8,15 +8,19 @@ def invoicelink(year,vendor,invoice):
         link = 'no invoice'
     else:
 #the static portions of the string
-        spt1 = 'https://msudenver.sharepoint.com/sites/DepartmentofChemistry/Shared%20Documents/Forms/AllItems.aspx/%20Finances?id=%2Fsites%2FDepartmentofChemistry%2FShared%20Documents%2FFinances%2Finvoices%2Ffiscal%20year%20'
+        spt1 = 'https://msudenver.sharepoint.com/sites/DepartmentofChemistry/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FDepartmentofChemistry%2FShared%20Documents%2FFinances%2Finvoices%2Ffiscal%20year%20'
         spt2 = '%2Epdf&parent=%2Fsites%2FDepartmentofChemistry%2FShared%20Documents%2FFinances%2Finvoices%2Ffiscal%20year%20'
+#get the year month out of the invoice
+        print(invoice)
+        ym = invoice.split('_')[1].split('-')[0] + '%2D' + invoice.split('_')[1].split('-')[1]
 #make the invoice into html code
         in1 = invoice.replace('_','%5F')
         in2 = in1.replace('-','%2D')
 #any blanks in the name need to be replaced
         nsvendor = vendor.replace(' ','%20')
 #make the link
-        link = spt1+year+'%2F'+nsvendor+'%2F'+in2+spt2+year+'%2F'+vendor
+        link = spt1+year+'%2F'+nsvendor+'%2F'+ym+'%2F'+in2+spt2+year+'%2F'+ vendor +'%2F' + ym
+
     return link
 
 def workbookmkrcomplied(opname,baselist,df,year):
@@ -120,5 +124,4 @@ def workbookmkrcomplied(opname,baselist,df,year):
 
 #freeze the top row
     reportsheet.freeze_panes(1,0)
-
     workbook.close()

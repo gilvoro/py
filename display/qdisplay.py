@@ -3,21 +3,25 @@ from tkinter import ttk
 from tkinter import font
 
 # def quit(*args):
-# 	root.destroy()
+#   root.destroy()
 
 #to quickly make all the frames we need for the display
-def framemaker(title,type,parent,fc = 'black',bc = 'white'):
-    typedict={'quote':['-mainframe','-holder','-messagebox','-signbox','-orginbox',
-                      '-msg','-ph1','-ph2','-sign','-org',
-                      '-phtxt','-msgtxt','-signtxt','-orgtxt'],
-             'fallacy':['-mainframe','-title','-msg','-titletxt','-msgtxt'],
-             'message':['-mainframe','-msg','-msgtxt']}
+def cardmaker(title,type,parent,fc = 'black',bc = 'white'):
+    typedict={'quote':['card','holder','messagebox','signbox','orginbox',
+                      'msg','ph1','ph2','sign','org',
+                      'phtxt','msgtxt','signtxt','orgtxt'],
+             'fallacy':['mainframe','title','msg','titletxt','msgtxt'],
+             'message':['mainframe','msg','msgtxt']}
 
     returndict = {}
+    
+    namelist = typedict[type]
 
-    namelist = []
-    for item in typedict[type]:
-        namelist.append(title+item)
+    fnt = font.Font(family='Helvetica', size=32, weight='bold')
+    qfnt = font.Font(family='Helvetica', size=32, weight='bold')
+    sfnt = font.Font(family='Helvetica', size=32, weight='bold')
+    ofnt = font.Font(family='Helvetica', size=20, weight='bold')
+
 
     if type == 'quote':
 #make the parent frame
@@ -48,7 +52,7 @@ def framemaker(title,type,parent,fc = 'black',bc = 'white'):
 #message into the messagebox
         returndict[namelist[5]] = Message(returndict[namelist[2]],
                                           textvariable = returndict[namelist[11]],
-                                          font = fnt,
+                                          font = qfnt,
                                           aspect = 500,
                                           fg = fc,
                                           bg = bc,
@@ -64,7 +68,7 @@ def framemaker(title,type,parent,fc = 'black',bc = 'white'):
 #signature
         returndict[namelist[8]] = Label(returndict[namelist[3]],
                                         textvariable = returndict[namelist[12]],
-                                        font = fnt,
+                                        font = sfnt,
                                         fg = fc,
                                         bg = bc,
                                         justify=CENTER)
@@ -79,7 +83,7 @@ def framemaker(title,type,parent,fc = 'black',bc = 'white'):
 #orgin line
         returndict[namelist[9]] = Label(returndict[namelist[4]],
                                                   textvariable = returndict[namelist[13]],
-                                                  font = fnt,
+                                                  font = ofnt,
                                                   fg = fc,
                                                   bg = bc,
                                                   justify=CENTER)
@@ -141,5 +145,5 @@ def framemaker(title,type,parent,fc = 'black',bc = 'white'):
 # root.bind("x", quit)
 # fnt = font.Font(family='Helvetica', size=32, weight='bold')
 #
-# test = framemaker('test','message',root)
-# root.mainloop()
+# test = framemaker('test','quote',fnt,root)
+# # root.mainloop()
